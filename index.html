@@ -153,10 +153,10 @@
             line-height: 1.6;
             background-color: #f5f6f8;
             color: #333;
-}
+    }
     </style>
 </head>
-<body>
+<br>
 
     <h1>Voxel Based Terrain Generation</h1>
 
@@ -209,8 +209,8 @@
             </ul>
         </li>
     </ul>
-
-    <h2>Advanced ray-tracing techniques</h2>
+    </br>
+    <strong>Advanced ray-tracing techniques</strong>
     <p>Fast Voxel Traversal is efficient in calculating which voxels a ray intersects as it moves through the terrain, allowing us to quickly identify surface voxels that interact with the ray. The 64-Tree structure, which organizes voxel data into a sparse hierarchical structure, will enable us to skip empty or redundant regions of the voxel grid, focusing computational resources on areas with detail. This combination of algorithms reduces the computational load by avoiding unnecessary calculations in empty space and quickly navigating complex areas with minimal memory overhead.</p>
     <p>Ray-tracing over voxel terrains is inherently parallelizable, as each ray operates independently in tracing its path through the voxel grid. On GPU platforms, thousands of rays can be cast simultaneously, with each thread on the GPU independently traversing its own set of voxels. This parallel approach is well-suited for GPUs, where we can maximize throughput by assigning each ray its own processing unit. On multi-core CPUs, we will parallelize at the core level, dividing sections of the terrain across cores to process simultaneously, enabling efficient multi-threading for complex terrain calculations.</p>
 
