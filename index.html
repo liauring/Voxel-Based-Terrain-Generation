@@ -12,13 +12,16 @@
             background-color: #f5f6f8;
             color: #333;
         }
-        h1, h2, h3, h4, h5, h6 {
+
+        h2, h3, h4, h5, h6 {
             margin-top: 1.2em;
             margin-bottom: 0.5em;
         }
         h1 {
             font-size: 2em;
             font-weight: bold;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
         }
         h2 {
             font-size: 1.75em;
@@ -55,12 +58,19 @@
             font-style: italic;
             color: #555;
         }
-        code {
-            font-family: Consolas, monospace;
-            background-color: #eee;
-            padding: 2px 5px;
-            border-radius: 3px;
+
+       pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
         }
+        code {
+            font-family: monospace;
+            color: #333;
+        }
+
         hr {
             border: 0;
             height: 1px;
@@ -71,41 +81,134 @@
 </head>
 <body>
 
-    <h1>Main Title (H1)</h1>
-    <p>This is a main section. You can add some introductory text here.</p>
+    <h1>Voxel Based Terrain Generation</h1>
 
-    <h2>Section Title (H2)</h2>
-    <p>This is a subsection. Use different headings for organization.</p>
+    <h2>SUMMARY</h2>
+    <p>We will focus on developing optimized implementations of voxel-based terrain rendering primarily using Perspective Projection, optimized for both GPU and multi-core CPU platforms. There is potential to further enhance performance by delving into advanced ray-tracing techniques, leveraging algorithms such as Fast Voxel Traversal and 64-Tree for deeper optimizations.</p>
 
-    <h3>Subsection Title (H3)</h3>
-    <p>Here's a smaller subsection.</p>
+    <h2>BACKGROUND</h2>
+    <p>Our project focuses on accelerating voxel-based terrain rendering, specifically targeting performance improvements on GPU and multi-core CPU platforms. Voxel-based terrain rendering is a compute-intensive process that involves creating detailed, three-dimensional landscapes by representing space as a grid of voxels, where each voxel holds information about height, color, and material properties.</p>
+    <p>The pseudocode uses a Perspective Projection to render a 3D terrain from a height map.</p>
+    <pre>
+        <code>
+    void renderTerrain(const HeightMap& heightMap, int screenWidth, int screenHeight, int horizon, float scale) {
+        // Loop over each column (x-coordinate) on the screen
+        for (int x = 0; x < screenWidth; ++x) {
+            // Loop from the back of the terrain (far z) to the front (near z)
+            for (int z = heightMap.getHeight(0, 0); z < screenWidth; ++z) {
+                ...
+            }
+        }
+    }
 
-    <h4>Further Subsection (H4)</h4>
-    <p>Even more detail can go here.</p>
-
-    <blockquote>
-        This is a blockquote. Use it to emphasize quotes or important notes.
-    </blockquote>
-
-    <p>Inline code example: <code>print("Hello World")</code>.</p>
-
+    void drawVerticalLine(int x, float yStart, float yEnd, const Color& color) {
+        // Draw a vertical line from yStart to yEnd at x with the given color
+        // In a real implementation, you would draw pixels on a display or window
+    }
+        </code>
+    </pre>
+    <p>Here’s how parallelism can be applied and the performance benefits it offers:</p>
     <ul>
-        <li>First list item</li>
-        <li>Second list item</li>
+        <li>
+            <strong>Column-Based Parallelism: func</strong> <code>renderTerrain()</code>
+            <ul>
+                <li>Each vertical column on the screen corresponds to a segment of the terrain that can be computed independently. This independence allows for parallel rendering, where each column or a block of columns can be assigned to a separate thread.</li>
+                <li>This approach is well-suited to multi-core CPUs, as each core can process different sections of the screen simultaneously, reducing rendering time significantly.</li>
+            </ul>
+        </li>
+
+        <li>
+            <strong>Efficient Use of GPU Cores: func</strong> <code>drawVerticalLine()</code>
+            <ul>
+                <li>On GPU platforms, each pixel or line can be handled by a separate GPU core. By leveraging thousands of GPU cores, the algorithm can render all screen columns in parallel, providing real-time terrain visualization even for large-scale maps.</li>
+                <li>The GPU’s parallel structure can accelerate computations such as perspective projection and color mapping across all screen columns, making the algorithm ideal for terrain rendering tasks that require quick updates or real-time interactivity.</li>
+            </ul>
+        </li>
+
+        <li>
+            <strong>Load Balancing for Large Scenes</strong>
+            <ul>
+                <li>By distributing columns evenly across processing units (CPU cores or GPU threads), the workload is balanced, and the algorithm achieves consistent rendering performance. For example, screen columns at varying depths might require slightly different amounts of computation (e.g., handling distant occlusions), but parallelism mitigates bottlenecks.</li>
+            </ul>
+        </li>
     </ul>
 
-    <ol>
-        <li>First ordered item</li>
-        <li>Second ordered item</li>
-    </ol>
+    <h2>Advanced ray-tracing techniques</h2>
+    <p>Fast Voxel Traversal is efficient in calculating which voxels a ray intersects as it moves through the terrain, allowing us to quickly identify surface voxels that interact with the ray. The 64-Tree structure, which organizes voxel data into a sparse hierarchical structure, will enable us to skip empty or redundant regions of the voxel grid, focusing computational resources on areas with detail. This combination of algorithms reduces the computational load by avoiding unnecessary calculations in empty space and quickly navigating complex areas with minimal memory overhead.</p>
+    <p>Ray-tracing over voxel terrains is inherently parallelizable, as each ray operates independently in tracing its path through the voxel grid. On GPU platforms, thousands of rays can be cast simultaneously, with each thread on the GPU independently traversing its own set of voxels. This parallel approach is well-suited for GPUs, where we can maximize throughput by assigning each ray its own processing unit. On multi-core CPUs, we will parallelize at the core level, dividing sections of the terrain across cores to process simultaneously, enabling efficient multi-threading for complex terrain calculations.</p>
 
-    <hr>
+    <p>The pseudocode uses Fast Voxel Traversal for the ray-tracing algorithm.</p>
+    <pre>
+        <code>
+    Color rayTrace(const VoxelGrid& voxel_grid, Ray& ray, int max_depth) {
+        // Return the color
+    }
+    
+    void renderTerrain(const VoxelGrid& voxel_grid, std::vector<Ray>& rays, int max_depth) {
+        // Parallelize loop across multiple CPU threads
+        for (size_t i = 0; i < rays.size(); ++i) {
+            rays[i].accumulated_color = rayTrace(voxel_grid, rays[i], max_depth);
+        }
+    }
+        </code>
+    </pre>
 
-    <h5>Deeper Section (H5)</h5>
-    <p>More nested content as needed.</p>
+    <h2>THE CHALLENGE</h2>
+    <p>The Basic Terrain Rendering Algorithm, based on a height map and color map, is challenging primarily due to the need for real-time rendering while ensuring smooth perspective projection and occlusion handling. The workload involves projecting terrain heights to a 2D screen, which needs to be efficient enough to avoid lag, especially for large-scale maps or high-resolution outputs.</p>
+    <h3>Workload</h3>
+    <ul>
+        <li><strong>Dependencies:</strong> Each screen column (vertical line) can be processed independently, which reduces dependencies between columns. However, there’s a dependency on the horizon line and the perspective projection parameters, which control how height data translates to screen space.</li>
+        
+        <li><strong>Memory Access:</strong> This algorithm accesses the height map data for each terrain segment, leading to sequential memory access if columns are processed from left to right. There is some locality in memory access since nearby columns are likely to reference similar data.</li>
+        
+        <li><strong>Communication to Computation Ratio:</strong> The communication overhead is low as each column calculation is largely independent. The main computation is the height-to-screen projection and occlusion check, which doesn’t require frequent inter-thread communication.</li>
+        
+        <li><strong>Divergent Execution:</strong> Divergence is minimal in this algorithm. Each column undergoes similar height and perspective calculations, though columns closer to the horizon may involve additional checks for occlusion.</li>
+    </ul>
+    <h3>Constraints</h3>
+    <ul>
+        <li><strong>System Constraints:</strong> Mapping this workload to a parallel system involves handling large arrays of height data, which may not fit entirely into cache on the CPU or GPU. Efficient caching and minimizing memory latency are crucial. On a multi-core CPU, balancing the workload per core may be necessary due to varying computational demands (e.g., columns closer to the horizon require more occlusion checks).</li>
+        
+        <li><strong>Graphics Constraints:</strong> On GPU, each thread could render a column or a portion of it, but managing memory for consistent, real-time rendering is essential. Synchronizing outputs and maintaining a smooth frame rate is necessary for optimal performance.</li>
+    </ul>
+    
+    <h2>RESOURCES</h2>
+    <p>The project will be built from scratch in C++, with no specific starter code. We are going to looking for existing height maps and color maps available from online repositories or open-source datasets to simulate terrain features. </p>
+    <p>Additionally, we will explore C++ libraries to handle graphic rendering, possibly OpenGL, SDL, or SFML, to facilitate rendering the height map and visualizing results on the screen. It  may require additional time to learn how to integrate these with the terrain rendering algorithm. Access to a graphical visualization library will help ensure that the rendered terrain can be displayed efficiently.</p>
 
-    <h6>Smallest Header (H6)</h6>
-    <p>Text under the smallest heading.</p>
+    <h2>GOALS AND DELIVERABLES</h2>
+    <h2>PLATFORM CHOICE</h2>
+    <h2>SCHEDULE</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Dates</th>
+                <th>Task</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>11/11-11/17</td>
+                <td>Finish the sequential version of Perspective Projection.</td>
+            </tr>
+            <tr>
+                <td>11/18-11/24</td>
+                <td>Convert the sequential version into the parallel one.</td>
+            </tr>
+            <tr>
+                <td>11/25-12/1</td>
+                <td>Test and visualize the performance.</td>
+            </tr>
+            <tr>
+                <td>12/2-12/8</td>
+                <td>Try advanced ray-tracing (if available).</td>
+            </tr>
+            <tr>
+                <td>12/9-12/15</td>
+                <td>Write the report and poster.</td>
+            </tr>
+        </tbody>
+    </table>
 
 </body>
 </html>
