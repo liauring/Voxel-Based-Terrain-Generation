@@ -59,16 +59,47 @@
             color: #555;
         }
 
-       pre {
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
+        pre {
+            background-color: #f5f5f5; 
+            color: #333333;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto; 
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px; 
+            line-height: 1.5;
             border: 1px solid #ddd;
-            overflow-x: auto;
         }
+
+        
         code {
-            font-family: monospace;
-            color: #333;
+            color: #333333;
+        }
+
+        code .keyword {
+            color: #d73a49;
+            font-weight: bold;
+        }
+
+        code .type {
+            color: #005cc5;
+        }
+
+        code .function {
+            color: #6f42c1;
+        }
+
+        code .comment {
+            color: #6a737d;
+            font-style: italic;
+        }
+
+        code .number {
+            color: #005cc5;
+        }
+
+        code .string {
+            color: #032f62;
         }
 
         hr {
@@ -77,6 +108,52 @@
             background-color: #ccc;
             margin: 2em 0;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        table thead th {
+            background-color: #7b7b7b;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        table tbody td {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        table tbody tr:nth-child(even) td {
+            background-color: #f1f1f1;
+        }
+
+        table tbody tr:hover td {
+            background-color: #eaf3e3;
+            color: #333;
+        }
+
+        body {
+            width: 80%;
+            max-width: 100%;
+            min-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f6f8;
+            color: #333;
+}
     </style>
 </head>
 <body>
@@ -90,23 +167,23 @@
     <p>Our project focuses on accelerating voxel-based terrain rendering, specifically targeting performance improvements on GPU and multi-core CPU platforms. Voxel-based terrain rendering is a compute-intensive process that involves creating detailed, three-dimensional landscapes by representing space as a grid of voxels, where each voxel holds information about height, color, and material properties.</p>
     <p>The pseudocode uses a Perspective Projection to render a 3D terrain from a height map.</p>
     <pre>
-        <code>
-    void renderTerrain(const HeightMap& heightMap, int screenWidth, int screenHeight, int horizon, float scale) {
-        // Loop over each column (x-coordinate) on the screen
-        for (int x = 0; x < screenWidth; ++x) {
-            // Loop from the back of the terrain (far z) to the front (near z)
-            for (int z = heightMap.getHeight(0, 0); z < screenWidth; ++z) {
+<code>
+    <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">HeightMap&amp;</span> heightMap, <span class="keyword">int</span> screenWidth, <span class="keyword">int</span> screenHeight, <span class="keyword">int</span> horizon, <span class="keyword">float</span> scale) {
+        <span class="comment">// Loop over each column (x-coordinate) on the screen</span>
+        <span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt; screenWidth; ++x) {
+            <span class="comment">// Loop from the back of the terrain (far z) to the front (near z)</span>
+            <span class="keyword">for</span> (<span class="keyword">int</span> z = heightMap.getHeight(<span class="number">0</span>, <span class="number">0</span>); z &lt; screenWidth; ++z) {
                 ...
             }
         }
     }
 
-    void drawVerticalLine(int x, float yStart, float yEnd, const Color& color) {
-        // Draw a vertical line from yStart to yEnd at x with the given color
-        // In a real implementation, you would draw pixels on a display or window
+    <span class="keyword">void</span> <span class="function">drawVerticalLine</span>(<span class="keyword">int</span> x, <span class="keyword">float</span> yStart, <span class="keyword">float</span> yEnd, <span class="keyword">const</span> <span class="type">Color&amp;</span> color) {
+        <span class="comment">// Draw a vertical line from yStart to yEnd at x with the given color</span>
+        <span class="comment">// In a real implementation, you would draw pixels on a display or window</span>
     }
-        </code>
-    </pre>
+</code>
+</pre>
     <p>Here’s how parallelism can be applied and the performance benefits it offers:</p>
     <ul>
         <li>
@@ -140,14 +217,14 @@
     <p>The pseudocode uses Fast Voxel Traversal for the ray-tracing algorithm.</p>
     <pre>
         <code>
-    Color rayTrace(const VoxelGrid& voxel_grid, Ray& ray, int max_depth) {
-        // Return the color
+    <span class="type">Color</span> <span class="function">rayTrace</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">Ray&amp;</span> ray, <span class="keyword">int</span> max_depth) {
+        <span class="comment">// Return the color</span>
     }
-    
-    void renderTerrain(const VoxelGrid& voxel_grid, std::vector<Ray>& rays, int max_depth) {
-        // Parallelize loop across multiple CPU threads
-        for (size_t i = 0; i < rays.size(); ++i) {
-            rays[i].accumulated_color = rayTrace(voxel_grid, rays[i], max_depth);
+        
+    <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">std::vector&amp;</span> rays, <span class="keyword">int</span> max_depth) {
+        <span class="comment">// Parallelize loop across multiple CPU threads</span>
+        <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; rays.size(); ++i) {
+            rays[i].accumulated_color = <span class="function">rayTrace</span>(voxel_grid, rays[i], max_depth);
         }
     }
         </code>
@@ -196,15 +273,15 @@
                 <td>Convert the sequential version into the parallel one.</td>
             </tr>
             <tr>
-                <td>11/25-12/1</td>
+                <td>11/25-12/01</td>
                 <td>Test and visualize the performance.</td>
             </tr>
             <tr>
-                <td>12/2-12/8</td>
+                <td>12/02-12/08</td>
                 <td>Try advanced ray-tracing (if available).</td>
             </tr>
             <tr>
-                <td>12/9-12/15</td>
+                <td>12/09-12/15</td>
                 <td>Write the report and poster.</td>
             </tr>
         </tbody>
