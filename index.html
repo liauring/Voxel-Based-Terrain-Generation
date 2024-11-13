@@ -187,7 +187,7 @@
     <p>Here’s how parallelism can be applied and the performance benefits it offers:</p>
     <ul>
         <li>
-            <strong>Column-Based Parallelism: func</strong> <code>renderTerrain()</code>
+            <strong>Column-Based Parallelism:</strong> <code>void renderTerrain()</code>
             <ul>
                 <li>Each vertical column on the screen corresponds to a segment of the terrain that can be computed independently. This independence allows for parallel rendering, where each column or a block of columns can be assigned to a separate thread.</li>
                 <li>This approach is well-suited to multi-core CPUs, as each core can process different sections of the screen simultaneously, reducing rendering time significantly.</li>
@@ -195,7 +195,7 @@
         </li>
 
         <li>
-            <strong>Efficient Use of GPU Cores: func</strong> <code>drawVerticalLine()</code>
+            <strong>Efficient Use of GPU Cores:</strong> <code>void drawVerticalLine()</code>
             <ul>
                 <li>On GPU platforms, each pixel or line can be handled by a separate GPU core. By leveraging thousands of GPU cores, the algorithm can render all screen columns in parallel, providing real-time terrain visualization even for large-scale maps.</li>
                 <li>The GPU’s parallel structure can accelerate computations such as perspective projection and color mapping across all screen columns, making the algorithm ideal for terrain rendering tasks that require quick updates or real-time interactivity.</li>
