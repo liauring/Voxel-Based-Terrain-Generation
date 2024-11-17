@@ -161,11 +161,11 @@
     <h1>Voxel Based Terrain Generation</h1>
 
     <h2>SUMMARY</h2>
-    <p>We will focus on developing optimized implementations of voxel-based terrain rendering primarily using Perspective Projection, optimized for both GPU and multi-core CPU platforms. There is potential to further enhance performance by delving into advanced ray-tracing techniques, leveraging algorithms such as Fast Voxel Traversal and 64-Tree for deeper optimizations.</p>
+    <p>We will focus on developing optimized implementations of voxel-based terrain rendering primarily using <u>Perspective Projection</u>, optimized for both GPU and multi-core CPU platforms. There is potential to further enhance performance by delving into advanced ray-tracing techniques, leveraging algorithms such as Fast Voxel Traversal and 64-Tree for deeper optimizations.</p>
 
     <h2>BACKGROUND</h2>
     <p>Our project focuses on accelerating voxel-based terrain rendering, specifically targeting performance improvements on GPU and multi-core CPU platforms. Voxel-based terrain rendering is a compute-intensive process that involves creating detailed, three-dimensional landscapes by representing space as a grid of voxels, where each voxel holds information about height, color, and material properties.</p>
-    <p>The pseudocode uses a Perspective Projection to render a 3D terrain from a height map.</p>
+    <p>The pseudocode uses a <u>Perspective Projection</u> to render a 3D terrain from a height map.</p>
     <pre>
 <code>
     <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">HeightMap&amp;</span> heightMap, <span class="keyword">int</span> screenWidth, <span class="keyword">int</span> screenHeight, <span class="keyword">int</span> horizon, <span class="keyword">float</span> scale) {
@@ -174,6 +174,7 @@
             <span class="comment">// Loop from the back of the terrain (far z) to the front (near z)</span>
             <span class="keyword">for</span> (<span class="keyword">int</span> z = heightMap.getHeight(<span class="number">0</span>, <span class="number">0</span>); z &lt; screenWidth; ++z) {
                 ...
+                drawVerticalLine(x, projectedY, maxY, color);
             }
         }
     }
@@ -209,26 +210,7 @@
             </ul>
         </li>
     </ul>
-    </br>
-    <strong>Advanced ray-tracing techniques</strong>
-    <p>Fast Voxel Traversal is efficient in calculating which voxels a ray intersects as it moves through the terrain, allowing us to quickly identify surface voxels that interact with the ray. The 64-Tree structure, which organizes voxel data into a sparse hierarchical structure, will enable us to skip empty or redundant regions of the voxel grid, focusing computational resources on areas with detail. This combination of algorithms reduces the computational load by avoiding unnecessary calculations in empty space and quickly navigating complex areas with minimal memory overhead.</p>
-    <p>Ray-tracing over voxel terrains is inherently parallelizable, as each ray operates independently in tracing its path through the voxel grid. On GPU platforms, thousands of rays can be cast simultaneously, with each thread on the GPU independently traversing its own set of voxels. This parallel approach is well-suited for GPUs, where we can maximize throughput by assigning each ray its own processing unit. On multi-core CPUs, we will parallelize at the core level, dividing sections of the terrain across cores to process simultaneously, enabling efficient multi-threading for complex terrain calculations.</p>
-
-    <p>The pseudocode uses Fast Voxel Traversal for the ray-tracing algorithm.</p>
-    <pre>
-        <code>
-    <span class="type">Color</span> <span class="function">rayTrace</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">Ray&amp;</span> ray, <span class="keyword">int</span> max_depth) {
-        <span class="comment">// Return the color</span>
-    }
-        
-    <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">std::vector&amp;</span> rays, <span class="keyword">int</span> max_depth) {
-        <span class="comment">// Parallelize loop across multiple CPU threads</span>
-        <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; rays.size(); ++i) {
-            rays[i].accumulated_color = <span class="function">rayTrace</span>(voxel_grid, rays[i], max_depth);
-        }
-    }
-        </code>
-    </pre>
+    
 
     <h2>THE CHALLENGE</h2>
     <p>The Basic Terrain Rendering Algorithm, based on a height map and color map, is challenging primarily due to the need for real-time rendering while ensuring smooth perspective projection and occlusion handling. The workload involves projecting terrain heights to a 2D screen, which needs to be efficient enough to avoid lag, especially for large-scale maps or high-resolution outputs.</p>
@@ -254,7 +236,198 @@
     <p>Additionally, we will explore C++ libraries to handle graphic rendering, possibly OpenGL, SDL, or SFML, to facilitate rendering the height map and visualizing results on the screen. It  may require additional time to learn how to integrate these with the terrain rendering algorithm. Access to a graphical visualization library will help ensure that the rendered terrain can be displayed efficiently.</p>
 
     <h2>GOALS AND DELIVERABLES</h2>
+    <ul>
+        <li>
+            <strong>Separate your goals into what you PLAN TO ACHIEVE (what you believe you must get done to have a successful project and get the grade you expect) and an extra goal or two that you HOPE TO ACHIEVE if the project goes really well and you get ahead of schedule, as well as goals in case the work goes more slowly. It may not be possible to state precise performance goals at this time, but we encourage you be as precise as possible. If you do state a goal, give some justification of why you think you can achieve it. (e.g., I hope to speed up my starter code 10x, because if I did it would run in real-time.)</strong>
+            <ul>
+                <li>
+                    <strong>Plan to Achieve: Voxel Rendering on parallel CPU and GPU</strong>
+                    <ul class="sub-list">
+                        <li>
+                            <strong>Develop Serial (Single-Threaded) Implementation:</strong>
+                            <ul>
+                                <li>Implement a serial version of the algorithm as a baseline.</li>
+                                <li>Finalize performance metrics to evaluate future optimizations.
+                                    <ul>
+                                        <li>Processing time</li>
+                                        <li>Data transfer time</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Implement CPU Parallel Version:</strong>
+                            <ul>
+                                <li>Develop a parallel version optimized for multi-core CPUs.</li>
+                                <li>Measure its performance against the serial version.</li>
+                                <li>Optimize further by reducing synchronizations and leveraging AVX for hardware acceleration.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Develop GPU Parallel Version:</strong>
+                            <ul>
+                                <li>Implement the algorithm on a GPU.</li>
+                                <li>Measure performance compared with serial and CPU parallel versions.</li>
+                                <li>Apply GPU-specific optimizations such as utilizing shared memory and optimizing thread blocks.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Analyze Data and Optimize Further:</strong>
+                            <ul>
+                                <li>Collect performance data for all versions.</li>
+                                <li>Analyze results to identify additional areas for optimization.</li>
+                                <li>Implement further enhancements to maximize efficiency.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Combine CPU and GPU for Hybrid Optimization:</strong>
+                            <ul>
+                                <li>Analyze performance metrics to identify CPU vs. GPU benefits.</li>
+                                <li>Test a hybrid approach for further performance gains.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Extra Goal: Advanced ray-tracing techniques</strong>
+                    <p><u>Fast Voxel Traversal</u> is efficient in calculating which voxels a ray intersects as it moves through the terrain, allowing us to quickly identify surface voxels that interact with the ray. The 64-Tree structure, which organizes voxel data into a sparse hierarchical structure, will enable us to skip empty or redundant regions of the voxel grid, focusing computational resources on areas with detail. This combination of algorithms reduces the computational load by avoiding unnecessary calculations in empty space and quickly navigating complex areas with minimal memory overhead.</p>
+            <p>Ray-tracing over voxel terrains is inherently parallelizable, as each ray operates independently in tracing its path through the voxel grid. On GPU platforms, thousands of rays can be cast simultaneously, with each thread on the GPU independently traversing its own set of voxels. This parallel approach is well-suited for GPUs, where we can maximize throughput by assigning each ray its own processing unit. On multi-core CPUs, we will parallelize at the core level, dividing sections of the terrain across cores to process simultaneously, enabling efficient multi-threading for complex terrain calculations.</p>
+        
+            <p>The pseudocode uses <u>Fast Voxel Traversal</u> for the ray-tracing algorithm.</p>
+            <pre>
+                <code>
+            <span class="type">Color</span> <span class="function">rayTrace</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">Ray&amp;</span> ray, <span class="keyword">int</span> max_depth) {
+                <span class="comment">// Return the color</span>
+            }
+                
+            <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">std::vector&amp;</span> rays, <span class="keyword">int</span> max_depth) {
+                <span class="comment">// Parallelize loop across multiple CPU threads</span>
+                <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; rays.size(); ++i) {
+                    rays[i].accumulated_color = <span class="function">rayTrace</span>(voxel_grid, rays[i], max_depth);
+                }
+            }
+                </code>
+            </pre>
+        
+                </li>
+            </ul>
+        </li>
+        <li>
+            <strong>If applicable, describe the demo you plan to show at the poster session (Will it be an interactive demo? Will you show an output of the program that is really neat? Will you show speedup graphs?). Specifically, what will you show us that will demonstrate you did a good job?</strong>
+            <p>For the poster session, the demo will include both a visual showcase of the rendered terrain and performance analysis results to highlight the effectiveness of the implemented algorithm.</p>
+            <ul>
+                <li>Visual Showcase</li>
+                <ul>
+                    <li>The demo will display a rendered terrain based on height maps, using perspective projection for a 3D effect.</li>
+                    <li>Side-by-side comparison of simple (e.g., flat) and complex (e.g., mountainous) terrains will demonstrate the algorithm’s robustness.</li>
+                </ul>
+                <li>Performance Metrics</li>
+                <ul>
+                    <li><strong>Speedup Graphs:</strong> Graphs showing the performance improvements when parallelizing the algorithm (e.g., sequential vs. multi-core CPU, or GPU acceleration if implemented).</li>
+                    <li><strong>Resource Utilization:</strong> Analysis of memory usage and processing time for different terrain complexities and resolutions.</li>
+                    <li><strong>Advanced Ray-Tracing Features Speedup Graph</strong> (if implemented): Showcase improved shading, occlusion handling, or visual realism.</li>
+                </ul>
+            </ul>
+        </li>
+        <li>
+            <strong>If your project is an analysis project, what are you hoping to learn about the workload or system being studied? What question(s) do you plan to answer in your analysis?</strong>
+            <ul>
+                <li><strong>Parallelization Impact:</strong>
+                    <ul class="sub-list">
+                        <li>How does the workload distributed across cores in a multi-core CPU and GPU differ?
+                            <ul>
+                                <li>CPU offers opportunities for both SIMD and MIMD optimizations. SIMD can be implemented through ISPC instructions to take advantage of the AVX hardware, while MIMD can be achieved through launching different threads on different cores.</li>
+                                <li>GPU offers much easier implementation on SIMD and it also provides much more SIMD cores than CPU.</li>
+                                <li>As a result, general computations, like data processing or control flow operations, can be efficiently handled by the CPU, while repetitive, parallelizable tasks, such as voxel rendering, are best offloaded to the GPU.</li>
+                            </ul>
+                        </li>
+                        <li>When comparing CPU and GPU, what are the differences in bottlenecks in memory or computation?
+                            <ul>
+                                <li>CPUs are often limited by memory bandwidth and latency, whereas GPUs are more constrained by their computational throughput and efficiency in parallel processing.</li>
+                                <li>GPUs can face significant bottlenecks due to the latency of data transfer between the CPU and GPU, as well as the overhead associated with kernel launches.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Scalability:</strong>
+                    <ul class="sub-list">
+                        <li>How well does the algorithm scale with increased terrain resolution or complexity?
+                            <ul>
+                                <li>The algorithm should theoretically scale efficiently on the GPU as the resolution or map size increases, allowing more voxels to utilize the GPU cores simultaneously.</li>
+                                <li>Main limitations would include data transmission between the CPU and GPU, as well as the finite number of Streaming Multiprocessors (SMs) available on the GPU, which can cap the parallel performance as the workload grows.</li>
+                            </ul>
+                        </li>
+                        <li>What is the impact of increasing the number of threads or GPU cores on rendering time?
+                            <ul>
+                                <li>Having more GPU cores will shorten the rendering time. However, it will not be linear, since there will be an impact on data transmissions as well as scheduling overhead.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Locality and Memory Efficiency:</strong>
+                    <ul class="sub-list">
+                        <li>How does the algorithm leverage spatial locality in height map access?
+                            <ul>
+                                <li>Ideally, voxels will be independent of each other and each voxel will read and process its local region.</li>
+                                <li>Spatial locality may be beneficial through reading and reusing its local region.</li>
+                            </ul>
+                        </li>
+                        <li>What optimizations (e.g., caching or memory layout changes) yield the most significant performance gains?
+                            <ul>
+                                <li>Optimizations could be experimented with by changing memory layouts, using shared memory, or manipulating the algorithm to benefit from memory locality.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Key Questions to Answer:</strong>
+                    <ul class="sub-list">
+                        <li>What are the trade-offs between memory usage and computational efficiency in rendering high-resolution terrains?</li>
+                        <li>How can bottlenecks in rendering be minimized to achieve real-time performance?</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <strong>Systems project proposals should describe what the system will be capable of and what performance is hoped to be achieved.</strong>
+            <ul>
+                <li>System capabilities</li>
+                <ul>
+                    <li>
+                        <strong>GPU:</strong> Optimized for executing <i>SIMD (Single Instruction, Multiple Data)</i> instructions, allowing efficient parallel processing for rendering voxel-based terrains.
+                    </li>
+                    <li>
+                        <strong>CPU:</strong> Provides greater flexibility in workload distribution, capable of handling both <i>MIMD (Multiple Instruction, Multiple Data)</i> and <i>SIMD</i> instructions using technologies like <i>pthreads</i>, <i>OpenMP</i>, and <i>AVX hardware acceleration</i> to maximize multi-core performance.
+                    </li>
+                </ul>
+                <li>Performance goal</li>
+                <ul>
+                    <li>The CPU goal for 8 core GHC  machine is 5x and for 64 core PHC core machine is 20x. The speedup is evaluated from the experiments done in assignment 3. Given the significant parallel computation potential of this project, we aim to achieve similar or potentially even greater speedup than observed in previous experiments.</li>
+                    <li>While the specific speedup on the GPU will depend on evaluating communication costs and scheduling overhead, we expect a significant performance improvement compared to the CPU performance due to the GPU’s parallel processing capabilities. Additionally, we expect the GPU performance on the PSC system to be approximately 1.5x higher than on the GHC system when utilizing a single graphics card since V100 offers almost twice the amount of CUDA cores than RTX 2080. Besides, the higher memory bandwidth of V100 will also reduce the latency from data transfer. </li>
+                </ul>
+            
+            </ul>
+        </li>
+    </ul>
     <h2>PLATFORM CHOICE</h2>
+    <ul>
+        <li>
+            <strong>PSC Machine for CPU & GPU Performance Comparison</strong>
+            <ul class="sub-list">
+                <li>PSC machine provides high core count CPUs and GPUs for testing</li>
+                <li>CPU: AMD EPYC 7742 64-Core Processor (can access multiple nodes for more cores)</li>
+                <li>GPU: NVIDIA TESLA V100 - 5120 CUDA cores, Memory Bandwidth: Up to 900 GB/s</li>
+            </ul>
+        </li>
+        <li>
+            <strong>GHC Machine for CPU & GPU Testing</strong>
+            <ul class="sub-list">
+                <li>GHC machine provides lower core count CPUs and GPUs but is ideal for testing since PSC machine has limitations on balance</li>
+                <li>CPU: Intel(R) Core(TM) i7-9700 8-Core Processor</li>
+                <li>GPU: NVIDIA RTX2080 - 2944 CUDA cores, Memory Bandwidth: 448 GB/s</li>
+            </ul>
+        </li>
+    </ul>
+
     <h2>SCHEDULE</h2>
     <table border="1">
         <thead>
@@ -266,25 +439,50 @@
         <tbody>
             <tr>
                 <td>11/11-11/17</td>
-                <td>Finish the sequential version of Perspective Projection.</td>
+                <td>
+                    <ul>
+                        <li>Collect height and color maps</li>
+                        <li>Survey and decide C++ rendering packages</li>
+                    </ul>
+                </td>
             </tr>
             <tr>
                 <td>11/18-11/24</td>
-                <td>Convert the sequential version into the parallel one.</td>
+                <td>
+                    <ul>
+                        <li>Finish the serial version of Perspective Projection</li>
+                        <li>Prepare test cases for parallelism</li>
+                    </ul>
+                </td>
             </tr>
             <tr>
-                <td>11/25-12/01</td>
-                <td>Test and visualize the performance.</td>
+                <td>11/25-12/1</td>
+                <td>
+                    <ul>
+                        <li>Convert the sequential version into the parallel one</li>
+                        <li>Test and analyze parallel version performance</li>
+                    </ul>
+                </td>
             </tr>
             <tr>
-                <td>12/02-12/08</td>
-                <td>Try advanced ray-tracing (if available).</td>
+                <td>12/2-12/8</td>
+                <td>
+                    <ul>
+                        <li>Visualize rendering results for demo</li>
+                        <li>Implement advance ray-tracing (if available)</li>
+                    </ul>
+                </td>
             </tr>
             <tr>
-                <td>12/09-12/15</td>
-                <td>Write the report and poster.</td>
+                <td>12/9-12/15</td>
+                <td>
+                    <ul>
+                        <li>Write the report and poster</li>
+                    </ul>
+                </td>
             </tr>
         </tbody>
+    </table>
     </table>
 
 </body>
