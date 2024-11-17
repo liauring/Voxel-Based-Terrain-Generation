@@ -295,18 +295,18 @@
         
             <p>The pseudocode uses <u>Fast Voxel Traversal</u> for the ray-tracing algorithm.</p>
             <pre>
-                <code>
-            <span class="type">Color</span> <span class="function">rayTrace</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">Ray&amp;</span> ray, <span class="keyword">int</span> max_depth) {
-                <span class="comment">// Return the color</span>
-            }
-                
-            <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">std::vector&amp;</span> rays, <span class="keyword">int</span> max_depth) {
-                <span class="comment">// Parallelize loop across multiple CPU threads</span>
-                <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; rays.size(); ++i) {
-                    rays[i].accumulated_color = <span class="function">rayTrace</span>(voxel_grid, rays[i], max_depth);
-                }
-            }
-                </code>
+<code>
+    <span class="type">Color</span> <span class="function">rayTrace</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">Ray&amp;</span> ray, <span class="keyword">int</span> max_depth) {
+    <span class="comment">// Return the color</span>
+    }
+
+    <span class="keyword">void</span> <span class="function">renderTerrain</span>(<span class="keyword">const</span> <span class="type">VoxelGrid&amp;</span> voxel_grid, <span class="type">std::vector&amp;</span> rays, <span class="keyword">int</span> max_depth) {
+    <span class="comment">// Parallelize loop across multiple CPU threads</span>
+    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; rays.size(); ++i) {
+        rays[i].accumulated_color = <span class="function">rayTrace</span>(voxel_grid, rays[i], max_depth);
+    }
+    }
+</code>
             </pre>
         
                 </li>
