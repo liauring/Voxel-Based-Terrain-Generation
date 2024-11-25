@@ -1,6 +1,6 @@
 # Compiler and Flags
-CC = gcc
-CFLAGS = -Wall -O2 -std=c++17
+CC = g++
+CFLAGS = -Wall -O2 -std=c++17 -fopenmp
 LDFLAGS = -lpng -lm
 
 # Target and Source Files

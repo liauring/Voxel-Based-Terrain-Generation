@@ -5,6 +5,9 @@
 #include <png.h>
 #include <sys/stat.h> // For mkdir
 #include <sys/types.h> // For mode_t
+#include <iostream>
+#include <chrono>
+#include <omp.h>
 
 #define WIDTH 700
 #define HEIGHT 512
@@ -34,16 +37,19 @@ void SaveFrameAsImage(int frameNumber);
 void CreateOutputFolder(const char *foldername);
 
 int main() {
+    const auto compute_start = std::chrono::steady_clock::now();
+
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
     Init("./C7W.png", "./D7.png");
-
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
         SaveFrameAsImage(i); // Save the current frame as an image
     }
+    const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
+    std::cout << "Computation time (sec): " << compute_time << '\n';
 
     return 0;
 }
