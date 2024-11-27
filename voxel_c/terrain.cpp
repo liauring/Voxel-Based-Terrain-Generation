@@ -158,7 +158,7 @@ void Init(const char *colorfilename, const char *heightfilename) {
 
     free(colorImage);
     free(heightImage);
-    ClearScreen(0xffa366); // Clear the screen
+    ClearScreen(0x87CEEB); // Clear the screen
 }
 // -----------------------------------------------------
 
@@ -216,7 +216,7 @@ void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, fl
 // -----------------------------------------------------
 
 void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, CustomPoint pmap) {
-    ClearScreen(0xffa366); // Reset the screen
+    ClearScreen(0x87CEEB); // Reset the screen
 
     for (int i = 0; i < WIDTH; i++) {
         hidden[i] = HEIGHT;
@@ -235,7 +235,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
             (CustomPoint){p.x + pr.x, p.y + pr.y},
             -height, -1.0f / z * 240.0f, 100, pmap);
 
-        dz += 0.1f; // Increment dz gradually for depth
+        dz += 0.000001f; // Increment dz gradually for depth
     }
 }
 
