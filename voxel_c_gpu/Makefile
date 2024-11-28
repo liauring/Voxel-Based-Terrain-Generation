@@ -12,9 +12,9 @@ OUTPUT_DIR = output
 
 # Target and Source Files
 TARGET = terrain
-CUDA_SRC = $(BUILD_DIR)/cudaterrain.cu
-CPP_SRC = $(BUILD_DIR)/terrain.cpp
-HEADERS = $(BUILD_DIR)/cudaterrain.h
+CUDA_SRC = cudaterrain.cu
+CPP_SRC = terrain.cpp
+HEADERS = cudaterrain.h
 
 # Object files
 CUDA_OBJ = $(BUILD_DIR)/cudaterrain.o

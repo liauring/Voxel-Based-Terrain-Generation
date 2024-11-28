@@ -8,7 +8,6 @@
 #include <iostream>
 #include <chrono>
 #include <omp.h>
-#include "cudaterrain.h"
 
 #define WIDTH 700
 #define HEIGHT 512
@@ -26,14 +25,10 @@ uint32_t screen[WIDTH * HEIGHT];
 uint8_t heightmap[MAP_SIZE][MAP_SIZE];
 uint32_t colormap[MAP_SIZE][MAP_SIZE];
 float hidden[WIDTH];
-uint32_t* d_screen ;
-float* d_hidden ;
-uint8_t* d_heightmap ;
-uint32_t* d_colormap ;
 
 // Function Prototypes
 void Init(const char *colorfilename, const char *heightfilename);
-//void DrawVerticalLine(int x, int ytop, int ybottom, uint32_t color);
+void DrawVerticalLine(int x, int ytop, int ybottom, uint32_t color);
 void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, float horizon, CustomPoint pmap);
 CustomPoint Rotate(CustomPoint p, float phi);
 void ClearScreen(uint32_t color);
@@ -42,20 +37,12 @@ void SaveFrameAsImage(int frameNumber);
 void CreateOutputFolder(const char *foldername);
 
 int main() {
-    
+    const auto compute_start = std::chrono::steady_clock::now();
 
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
-    Init("./C7W.png", "./D7.png");
-
-    // Initialize CUDA memory
-    initCudaMemory(&d_screen, &d_hidden, &d_heightmap, &d_colormap);
-
-    // Copy heightmap and colormap to GPU after initialization
-    copyDataToGPU(d_heightmap, heightmap, d_colormap, colormap);
-
-    const auto compute_start = std::chrono::steady_clock::now();
+    Init("../C7W.png", "../D7.png");
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
@@ -64,9 +51,6 @@ int main() {
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
 
-    // Cleanup CUDA memory
-    freeCudaMemory(d_screen, d_hidden, d_heightmap, d_colormap);
-    
     return 0;
 }
 
@@ -182,12 +166,6 @@ void ClearScreen(uint32_t color) {
     for (int i = 0; i < WIDTH * HEIGHT; i++) {
         screen[i] = color;
     }
-    // Clear GPU screen
-    cudaMemset(d_screen, color, WIDTH * HEIGHT * sizeof(uint32_t));
-    
-    // Reset hidden buffer on GPU
-    float init_hidden = HEIGHT;
-    cudaMemset(d_hidden, init_hidden, WIDTH * sizeof(float));
 }
 
 // -----------------------------------------------------
@@ -213,14 +191,26 @@ CustomPoint Rotate(CustomPoint p, float phi) {
 // -----------------------------------------------------
 
 void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, float horizon, CustomPoint pmap) {
-    cudaHorlineHidden(
-        d_screen,
-        d_hidden,
-        d_heightmap,
-        d_colormap,
-        p1, p2,
-        offset, scale, horizon
-    );
+    int n = WIDTH;
+    float dx = (p2.x - p1.x) / n;
+    float dy = (p2.y - p1.y) / n;
+
+    for (int i = 0; i < n; i++) {
+        int xi = ((int)floor(p1.x)) & (MAP_SIZE - 1);
+        int yi = ((int)floor(p1.y)) & (MAP_SIZE - 1);
+
+        float heightonscreen = (heightmap[xi][yi] + offset) * scale + horizon;
+        uint32_t color = colormap[xi][yi];
+
+        DrawVerticalLine(i, (int)heightonscreen, (int)hidden[i], color);
+
+        if (heightonscreen < hidden[i]) {
+            hidden[i] = heightonscreen;
+        }
+
+        p1.x += dx;
+        p1.y += dy;
+    }
 }
 
 // -----------------------------------------------------
@@ -247,8 +237,6 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
 
         dz += 0.000001f; // Increment dz gradually for depth
     }
-    // Copy screen back to CPU for saving frames
-    cudaMemcpy(screen, d_screen, WIDTH * HEIGHT * sizeof(uint32_t), cudaMemcpyDeviceToHost);
 }
 
 // -----------------------------------------------------
@@ -313,5 +301,3 @@ void SaveFrameAsImage(int frameNumber) {
     png_destroy_write_struct(&png, &info);
     fclose(fp);
 }
-
-

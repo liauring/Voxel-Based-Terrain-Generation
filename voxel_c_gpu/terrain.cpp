@@ -16,11 +16,6 @@
 
 
 
-// Structures
-typedef struct {
-    float x, y;
-} CustomPoint;  // Renamed from Point
-
 // Globals
 uint32_t screen[WIDTH * HEIGHT];
 uint8_t heightmap[MAP_SIZE][MAP_SIZE];
@@ -49,7 +44,7 @@ int main() {
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
-    Init("./C7W.png", "./D7.png");
+    Init("../C7W.png", "../D7.png");
     // Initialize CUDA memory
     initCudaMemory(&d_screen, &d_hidden, &d_heightmap, &d_colormap);
     copyDataToGPU(d_heightmap, heightmap, d_colormap, colormap);
