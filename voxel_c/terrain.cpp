@@ -9,8 +9,8 @@
 #include <chrono>
 #include <omp.h>
 
-#define WIDTH 700
-#define HEIGHT 512
+#define WIDTH 2800
+#define HEIGHT 2048
 #define MAP_SIZE 1024
 
 
@@ -46,7 +46,7 @@ int main() {
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        SaveFrameAsImage(i); // Save the current frame as an image
+        //SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
@@ -194,10 +194,11 @@ void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, fl
     int n = WIDTH;
     float dx = (p2.x - p1.x) / n;
     float dy = (p2.y - p1.y) / n;
-
+    #pragma omp parallel for
     for (int i = 0; i < n; i++) {
-        int xi = ((int)floor(p1.x)) & (MAP_SIZE - 1);
-        int yi = ((int)floor(p1.y)) & (MAP_SIZE - 1);
+        CustomPoint p = {p1.x + dx * i, p1.y + dy * i};
+        int xi = ((int)floor(p.x)) & (MAP_SIZE - 1);
+        int yi = ((int)floor(p.y)) & (MAP_SIZE - 1);
 
         float heightonscreen = (heightmap[xi][yi] + offset) * scale + horizon;
         uint32_t color = colormap[xi][yi];
@@ -208,8 +209,6 @@ void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, fl
             hidden[i] = heightonscreen;
         }
 
-        p1.x += dx;
-        p1.y += dy;
     }
 }
 
@@ -223,7 +222,12 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
     }
 
     float dz = 1.0f;
-    for (float z = 5; z < distance; z += dz) {
+    //calculate number of iterations
+    int iterations = (distance - 5) / dz;
+    //#pragma omp parallel for private(dz)
+    for (int i = 0; i < iterations; i++) {
+        dz = 1.0f + 0.000001f * i;  // Initialize dz for each thread
+        float z = 5 + i * dz;
         CustomPoint pl = {-z, -z};
         CustomPoint pr = { z, -z};
 
@@ -235,7 +239,8 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
             (CustomPoint){p.x + pr.x, p.y + pr.y},
             -height, -1.0f / z * 240.0f, 100, pmap);
 
-        dz += 0.000001f; // Increment dz gradually for depth
+        //dz += 0.000001f; // Increment dz gradually for depth
+        //dz += 0.000001f * i; // Increment dz gradually for depth
     }
 }
 
