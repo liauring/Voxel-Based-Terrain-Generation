@@ -45,8 +45,8 @@ int main() {
     Init("./C7W.png", "./D7.png");
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
-        DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        //SaveFrameAsImage(i); // Save the current frame as an image
+        DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 200, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
+        SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
@@ -221,13 +221,8 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
         hidden[i] = HEIGHT;
     }
 
-    float dz = 1.0f;
-    //calculate number of iterations
-    int iterations = (distance - 5) / dz;
-    //#pragma omp parallel for private(dz)
-    for (int i = 0; i < iterations; i++) {
-        dz = 1.0f + 0.000001f * i;  // Initialize dz for each thread
-        float z = 5 + i * dz;
+    float dz = 0.01f;
+    for (float z = 5; z < distance; z += dz) {
         CustomPoint pl = {-z, -z};
         CustomPoint pr = { z, -z};
 
@@ -239,8 +234,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
             (CustomPoint){p.x + pr.x, p.y + pr.y},
             -height, -1.0f / z * 240.0f, 100, pmap);
 
-        //dz += 0.000001f; // Increment dz gradually for depth
-        //dz += 0.000001f * i; // Increment dz gradually for depth
+        dz += 0.000001f; // Increment dz gradually for depth
     }
 }
 
