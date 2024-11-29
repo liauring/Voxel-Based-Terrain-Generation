@@ -212,41 +212,34 @@ CustomPoint Rotate(CustomPoint p, float phi) {
 // -----------------------------------------------------
 
 void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, float horizon, CustomPoint pmap) {
-    cudaHorlineHidden(
-        d_screen,
-        d_hidden,
-        d_heightmap,
-        d_colormap,
-        p1, p2,
-        offset, scale, horizon
-    );
+    // cudaHorlineHidden(
+    //     d_screen,
+    //     d_hidden,
+    //     d_heightmap,
+    //     d_colormap,
+    //     p1, p2,
+    //     offset, scale, horizon
+    // );
 }
 
 // -----------------------------------------------------
 
 void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, CustomPoint pmap) {
-    ClearScreen(0x87CEEB); // Reset the screen
+    ClearScreen(0x87CEEB);
 
-    for (int i = 0; i < WIDTH; i++) {
-        hidden[i] = HEIGHT;
-    }
-
-    float dz = 0.1f;
-    for (float z = 5; z < distance; z += dz) {
-        CustomPoint pl = {-z, -z};
-        CustomPoint pr = { z, -z};
-
-        pl = Rotate(pl, phi);
-        pr = Rotate(pr, phi);
-
-        HorlineHidden(
-            (CustomPoint){p.x + pl.x, p.y + pl.y},
-            (CustomPoint){p.x + pr.x, p.y + pr.y},
-            -height, -1.0f / z * 240.0f, 100, pmap);
-
-        dz += 0.000001f; // Increment dz gradually for depth
-    }
-    // Copy screen back to CPU for saving frames
+    // Launch kernel through wrapper function
+    launchRenderKernel(
+        d_screen,
+        d_hidden,
+        d_heightmap,
+        d_colormap,
+        p.x, p.y,
+        phi,
+        height,
+        distance
+    );
+    
+    // Copy result back
     cudaMemcpy(screen, d_screen, WIDTH * HEIGHT * sizeof(uint32_t), cudaMemcpyDeviceToHost);
 }
 

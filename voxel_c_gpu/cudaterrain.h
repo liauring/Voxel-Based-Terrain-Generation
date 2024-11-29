@@ -14,14 +14,15 @@ typedef struct {
     float x, y;
 } CustomPoint;
 
-// CUDA function declarations
-void cudaHorlineHidden(
+void launchRenderKernel(
     uint32_t* d_screen,
     float* d_hidden,
     const uint8_t* d_heightmap,
     const uint32_t* d_colormap,
-    CustomPoint p1, CustomPoint p2,
-    float offset, float scale, float horizon
+    float p_x, float p_y,
+    float phi,
+    float height,
+    float distance
 );
 
 // Memory management functions
