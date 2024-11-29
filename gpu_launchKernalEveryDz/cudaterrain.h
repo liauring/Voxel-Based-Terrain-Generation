@@ -8,21 +8,22 @@
 #define WIDTH 700
 #define HEIGHT 512
 #define MAP_SIZE 1024
+#define DZ 0.1f
+#define DZ_STEP 0.000001f
 
 // Structure definition (matching terrain.cpp)
 typedef struct {
     float x, y;
 } CustomPoint;
 
-void launchRenderKernel(
+// CUDA function declarations
+void cudaHorlineHidden(
     uint32_t* d_screen,
     float* d_hidden,
     const uint8_t* d_heightmap,
     const uint32_t* d_colormap,
-    float p_x, float p_y,
-    float phi,
-    float height,
-    float distance
+    CustomPoint p1, CustomPoint p2,
+    float offset, float scale, float horizon
 );
 
 // Memory management functions
@@ -57,5 +58,4 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 #endif // CUDATERRAIN_H
-
 

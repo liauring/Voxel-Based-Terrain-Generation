@@ -1,23 +1,7 @@
 #include <cuda_runtime.h>
 #include "cudaterrain.h"
 
-__device__ void ClearScreen(uint32_t* screen, float* hidden, uint32_t color){
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    for(int i = 0; i < HEIGHT; i++){
-        screen[index + i * WIDTH] = color;
-    }
-    hidden[index] = HEIGHT;
-}
-
-
-__device__ CustomPoint deviceRotate(CustomPoint p, float phi) {
-    float xtemp = p.x * cos(phi) + p.y * sin(phi);
-    float ytemp = p.x * -sin(phi) + p.y * cos(phi);
-    return (CustomPoint){xtemp, ytemp};
-}
-
-
-__device__ void horlineHidden(
+__global__ void horlineHiddenKernel(
     uint32_t* screen,
     float* hidden,
     const uint8_t* heightmap,
@@ -60,91 +44,31 @@ __device__ void horlineHidden(
     }
 }
 
-
-
-
-__global__ void DrawFrontToBackKernel(
-    uint32_t* screen,
-    float* hidden,
-    const uint8_t* heightmap,
-    const uint32_t* colormap,
-    float p_x, float p_y,
-    float phi,
-    float height,
-    float distance)
-{
-    // Each thread handles one vertical line
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= WIDTH) return;
-    ClearScreen(screen, hidden, 0x87CEEB);
-    // float z = 5.0f + idx * 0.1f;
-    // if (z >= distance) return;
-
-
-    float offset = -height;
-
-    float horizon = 100;
-    float dz = 0.1f;
-
-    for (float z = 5; z < distance; z += dz) {
-        float scale = -1.0f / z * 240.0f;
-
-        // Calculate points for this z
-        CustomPoint pl = {-z, -z};
-        CustomPoint pr = {z, -z};
-
-        // Rotate points
-        pl = deviceRotate(pl, phi);
-        pr = deviceRotate(pr, phi);
-
-        CustomPoint p1 = {p_x + pl.x, p_y + pl.y};
-        CustomPoint p2 = {p_x + pr.x, p_y + pr.y};
-
-        float dx = (p2.x - p1.x) / WIDTH;
-        float dy = (p2.y - p1.y) / WIDTH;
-
-
-        // Old horline kernel
-        horlineHidden(
-            screen, hidden, heightmap, colormap,
-            p1.x, p1.y, dx, dy,
-            offset, scale, horizon,
-            WIDTH, HEIGHT, MAP_SIZE
-        );
-
-        dz += 0.000001f; // Increment dz gradually for depth
-    }
-}
-
-
-void launchRenderKernel(
+// Host function to launch the kernel
+void cudaHorlineHidden(
     uint32_t* d_screen,
     float* d_hidden,
     const uint8_t* d_heightmap,
     const uint32_t* d_colormap,
-    float p_x, float p_y,
-    float phi,
-    float height,
-    float distance)
+    CustomPoint p1, CustomPoint p2,
+    float offset, float scale, float horizon)
 {
+    float dx = (p2.x - p1.x) / WIDTH;
+    float dy = (p2.y - p1.y) / WIDTH;
+
+    // Configure kernel launch
     int threadsPerBlock = 256;
-    int numBlocks = (WIDTH + threadsPerBlock - 1) / threadsPerBlock;
-    
-    DrawFrontToBackKernel<<<numBlocks, threadsPerBlock>>>(
-        d_screen,
-        d_hidden,
-        d_heightmap,
-        d_colormap,
-        p_x, p_y,
-        phi,
-        height,
-        distance
+    int blocks = (WIDTH + threadsPerBlock - 1) / threadsPerBlock;
+
+    horlineHiddenKernel<<<blocks, threadsPerBlock>>>(
+        d_screen, d_hidden, d_heightmap, d_colormap,
+        p1.x, p1.y, dx, dy,
+        offset, scale, horizon,
+        WIDTH, HEIGHT, MAP_SIZE
     );
     
-    cudaDeviceSynchronize();
+
 }
-
-
 
 // Memory initialization
 void initCudaMemory(
@@ -198,4 +122,3 @@ void freeCudaMemory(
     if (d_heightmap) cudaCheckError(cudaFree(d_heightmap));
     if (d_colormap) cudaCheckError(cudaFree(d_colormap));
 }
-

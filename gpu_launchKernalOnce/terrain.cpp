@@ -8,17 +8,15 @@
 #include <iostream>
 #include <chrono>
 #include <omp.h>
+#include "cudaterrain.h"
 
 #define WIDTH 700
 #define HEIGHT 512
 #define MAP_SIZE 1024
+#define DZ 0.1f
+#define DZ_STEP 0.000001f
 
 
-
-// Structures
-typedef struct {
-    float x, y;
-} CustomPoint;  // Renamed from Point
 
 // Globals
 uint32_t screen[WIDTH * HEIGHT];
@@ -36,21 +34,34 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
 void SaveFrameAsImage(int frameNumber);
 void CreateOutputFolder(const char *foldername);
 
+// Add GPU memory pointers with other globals
+uint32_t* d_screen;
+float* d_hidden;
+uint8_t* d_heightmap;
+uint32_t* d_colormap;
+
 int main() {
-    const auto compute_start = std::chrono::steady_clock::now();
+    
 
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
     Init("../C7W.png", "../D7.png");
+    // Initialize CUDA memory
+    initCudaMemory(&d_screen, &d_hidden, &d_heightmap, &d_colormap);
+    copyDataToGPU(d_heightmap, heightmap, d_colormap, colormap);
+    const auto compute_start = std::chrono::steady_clock::now();
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        SaveFrameAsImage(i); // Save the current frame as an image
+        // SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
 
+    // Cleanup CUDA memory
+    freeCudaMemory(d_screen, d_hidden, d_heightmap, d_colormap);
+    
     return 0;
 }
 
@@ -166,6 +177,18 @@ void ClearScreen(uint32_t color) {
     for (int i = 0; i < WIDTH * HEIGHT; i++) {
         screen[i] = color;
     }
+    // Clear GPU screen
+    //cudaMemset(d_screen, color, WIDTH * HEIGHT * sizeof(uint32_t));
+    cudaMemcpy(d_screen, screen, WIDTH * HEIGHT * sizeof(uint32_t), cudaMemcpyHostToDevice);
+
+    for (int i = 0; i < WIDTH; i++) {
+        hidden[i] = HEIGHT;
+    }
+    // Reset hidden buffer on GPU
+    //float init_hidden = HEIGHT;
+    //cudaMemset(d_hidden, init_hidden, WIDTH * sizeof(float));
+    cudaMemcpy(d_hidden, hidden, WIDTH * sizeof(float), cudaMemcpyHostToDevice);
+
 }
 
 // -----------------------------------------------------
@@ -191,52 +214,35 @@ CustomPoint Rotate(CustomPoint p, float phi) {
 // -----------------------------------------------------
 
 void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, float horizon, CustomPoint pmap) {
-    int n = WIDTH;
-    float dx = (p2.x - p1.x) / n;
-    float dy = (p2.y - p1.y) / n;
-
-    for (int i = 0; i < n; i++) {
-        int xi = ((int)floor(p1.x)) & (MAP_SIZE - 1);
-        int yi = ((int)floor(p1.y)) & (MAP_SIZE - 1);
-
-        float heightonscreen = (heightmap[xi][yi] + offset) * scale + horizon;
-        uint32_t color = colormap[xi][yi];
-
-        DrawVerticalLine(i, (int)heightonscreen, (int)hidden[i], color);
-
-        if (heightonscreen < hidden[i]) {
-            hidden[i] = heightonscreen;
-        }
-
-        p1.x += dx;
-        p1.y += dy;
-    }
+    // cudaHorlineHidden(
+    //     d_screen,
+    //     d_hidden,
+    //     d_heightmap,
+    //     d_colormap,
+    //     p1, p2,
+    //     offset, scale, horizon
+    // );
 }
 
 // -----------------------------------------------------
 
 void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, CustomPoint pmap) {
-    ClearScreen(0x87CEEB); // Reset the screen
+    //ClearScreen(0x87CEEB);
 
-    for (int i = 0; i < WIDTH; i++) {
-        hidden[i] = HEIGHT;
-    }
-
-    float dz = 0.1f;
-    for (float z = 5; z < distance; z += dz) {
-        CustomPoint pl = {-z, -z};
-        CustomPoint pr = { z, -z};
-
-        pl = Rotate(pl, phi);
-        pr = Rotate(pr, phi);
-
-        HorlineHidden(
-            (CustomPoint){p.x + pl.x, p.y + pl.y},
-            (CustomPoint){p.x + pr.x, p.y + pr.y},
-            -height, -1.0f / z * 240.0f, 100, pmap);
-
-        dz += 0.000001f; // Increment dz gradually for depth
-    }
+    // Launch kernel through wrapper function
+    launchRenderKernel(
+        d_screen,
+        d_hidden,
+        d_heightmap,
+        d_colormap,
+        p.x, p.y,
+        phi,
+        height,
+        distance
+    );
+    
+    // Copy result back
+    cudaMemcpy(screen, d_screen, WIDTH * HEIGHT * sizeof(uint32_t), cudaMemcpyDeviceToHost);
 }
 
 // -----------------------------------------------------
@@ -301,3 +307,5 @@ void SaveFrameAsImage(int frameNumber) {
     png_destroy_write_struct(&png, &info);
     fclose(fp);
 }
+
+
