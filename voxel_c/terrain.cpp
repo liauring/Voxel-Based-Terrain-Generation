@@ -222,7 +222,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
         hidden[i] = HEIGHT;
     }
 
-    float dz = 1.0f;
+    float dz = 0.1f;
     for (float z = 5; z < distance; z += dz) {
         CustomPoint pl = {-z, -z};
         CustomPoint pr = { z, -z};

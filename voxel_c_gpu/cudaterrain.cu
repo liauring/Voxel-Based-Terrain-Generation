@@ -67,9 +67,7 @@ void cudaHorlineHidden(
         WIDTH, HEIGHT, MAP_SIZE
     );
     
-    // Check for kernel launch errors
-    cudaCheckError(cudaGetLastError());
-    cudaCheckError(cudaDeviceSynchronize());
+
 }
 
 // Memory initialization
@@ -96,8 +94,8 @@ void initCudaMemory(
 
 // Copy data to GPU
 void copyDataToGPU(
-    uint8_t* d_heightmap, const uint8_t heightmap[][MAP_SIZE],
-    uint32_t* d_colormap, const uint32_t colormap[][MAP_SIZE])
+    uint8_t* d_heightmap, const uint8_t heightmap[MAP_SIZE][MAP_SIZE],
+    uint32_t* d_colormap, const uint32_t colormap[MAP_SIZE][MAP_SIZE])
 {
     // Copy heightmap to GPU
     cudaCheckError(cudaMemcpy(d_heightmap, 

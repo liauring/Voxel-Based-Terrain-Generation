@@ -39,7 +39,7 @@ uint8_t* d_heightmap;
 uint32_t* d_colormap;
 
 int main() {
-    const auto compute_start = std::chrono::steady_clock::now();
+    
 
     // Ensure output folder exists
     CreateOutputFolder("./output");
@@ -48,7 +48,7 @@ int main() {
     // Initialize CUDA memory
     initCudaMemory(&d_screen, &d_hidden, &d_heightmap, &d_colormap);
     copyDataToGPU(d_heightmap, heightmap, d_colormap, colormap);
-  
+    const auto compute_start = std::chrono::steady_clock::now();
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
@@ -176,11 +176,16 @@ void ClearScreen(uint32_t color) {
         screen[i] = color;
     }
     // Clear GPU screen
-    cudaMemset(d_screen, color, WIDTH * HEIGHT * sizeof(uint32_t));
-    
+    //cudaMemset(d_screen, color, WIDTH * HEIGHT * sizeof(uint32_t));
+    cudaMemcpy(d_screen, screen, WIDTH * HEIGHT * sizeof(uint32_t), cudaMemcpyHostToDevice);
+
+    for (int i = 0; i < WIDTH; i++) {
+        hidden[i] = HEIGHT;
+    }
     // Reset hidden buffer on GPU
-    float init_hidden = HEIGHT;
-    cudaMemset(d_hidden, init_hidden, WIDTH * sizeof(float));
+    //float init_hidden = HEIGHT;
+    //cudaMemset(d_hidden, init_hidden, WIDTH * sizeof(float));
+    cudaMemcpy(d_hidden, hidden, WIDTH * sizeof(float), cudaMemcpyHostToDevice);
 
 }
 
@@ -226,7 +231,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
         hidden[i] = HEIGHT;
     }
 
-    float dz = 1.0f;
+    float dz = 0.1f;
     for (float z = 5; z < distance; z += dz) {
         CustomPoint pl = {-z, -z};
         CustomPoint pr = { z, -z};
