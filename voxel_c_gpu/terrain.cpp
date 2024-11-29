@@ -225,7 +225,7 @@ void HorlineHidden(CustomPoint p1, CustomPoint p2, float offset, float scale, fl
 // -----------------------------------------------------
 
 void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, CustomPoint pmap) {
-    ClearScreen(0x87CEEB);
+    //ClearScreen(0x87CEEB);
 
     // Launch kernel through wrapper function
     launchRenderKernel(

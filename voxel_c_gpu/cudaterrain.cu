@@ -1,13 +1,69 @@
 #include <cuda_runtime.h>
 #include "cudaterrain.h"
 
+__device__ void ClearScreen(uint32_t* screen, float* hidden, uint32_t color){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    for(int i = 0; i < HEIGHT; i++){
+        screen[index + i * WIDTH] = color;
+    }
+    hidden[index] = HEIGHT;
+}
+
+
 __device__ CustomPoint deviceRotate(CustomPoint p, float phi) {
     float xtemp = p.x * cos(phi) + p.y * sin(phi);
     float ytemp = p.x * -sin(phi) + p.y * cos(phi);
     return (CustomPoint){xtemp, ytemp};
 }
 
-__global__ void horlineHiddenKernel(
+
+__device__ void horlineHidden(
+    uint32_t* screen,
+    float* hidden,
+    const uint8_t* heightmap,
+    const uint32_t* colormap,
+    float p1_x, float p1_y,
+    float dx, float dy,
+    float offset, float scale, float horizon,
+    int width, int height, int map_size)
+{
+    // Each thread handles one vertical line
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= width) return;
+
+    // Calculate position in heightmap/colormap
+    float cur_x = p1_x + dx * i;
+    float cur_y = p1_y + dy * i;
+    
+    int xi = ((int)floor(cur_x)) & (map_size - 1);
+    int yi = ((int)floor(cur_y)) & (map_size - 1);
+
+    // Calculate height and get color
+    float heightonscreen = (heightmap[yi * map_size + xi] + offset) * scale + horizon;
+    uint32_t color = colormap[yi * map_size + xi];
+
+    // Draw vertical line
+    int ytop = (int)heightonscreen;
+    int ybottom = (int)hidden[i];
+    
+    if (ytop < 0) ytop = 0;
+    if (ybottom > height) ybottom = height;
+    
+    // Draw pixels for this vertical line
+    for (int y = ytop; y < ybottom; y++) {
+        screen[y * width + i] = color;
+    }
+
+    // Update hidden buffer
+    if (heightonscreen < hidden[i]) {
+        hidden[i] = heightonscreen;
+    }
+}
+
+
+
+
+__global__ void DrawFrontToBackKernel(
     uint32_t* screen,
     float* hidden,
     const uint8_t* heightmap,
@@ -15,14 +71,12 @@ __global__ void horlineHiddenKernel(
     float p_x, float p_y,
     float phi,
     float height,
-    float distance,
-    int width,
-    int height_val,
-    int map_size)
+    float distance)
 {
     // Each thread handles one vertical line
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= width) return;
+    if (i >= WIDTH) return;
+    ClearScreen(screen, hidden, 0x87CEEB);
     // float z = 5.0f + idx * 0.1f;
     // if (z >= distance) return;
 
@@ -31,8 +85,9 @@ __global__ void horlineHiddenKernel(
 
     float horizon = 100;
     float dz = 0.1f;
+
     for (float z = 5; z < distance; z += dz) {
-        float scale = 1.0f / z * 240.0f;
+        float scale = -1.0f / z * 240.0f;
 
         // Calculate points for this z
         CustomPoint pl = {-z, -z};
@@ -45,69 +100,22 @@ __global__ void horlineHiddenKernel(
         CustomPoint p1 = {p_x + pl.x, p_y + pl.y};
         CustomPoint p2 = {p_x + pr.x, p_y + pr.y};
 
-        float dx = (p2.x - p1.x) / width;
-        float dy = (p2.y - p1.y) / width;
+        float dx = (p2.x - p1.x) / WIDTH;
+        float dy = (p2.y - p1.y) / WIDTH;
 
 
         // Old horline kernel
-        // Calculate position in heightmap/colormap
-        float cur_x = p1.x + dx * i;
-        float cur_y = p1.y + dy * i;
-        
-        int xi = ((int)floor(cur_x)) & (map_size - 1);
-        int yi = ((int)floor(cur_y)) & (map_size - 1);
-
-        // Calculate height and get color
-        float heightonscreen = (heightmap[yi * map_size + xi] + offset) * scale + horizon;
-        uint32_t color = colormap[yi * map_size + xi];
-
-        // Draw vertical line
-        int ytop = (int)heightonscreen;
-        int ybottom = (int)hidden[i];
-        
-        if (ytop < 0) ytop = 0;
-        if (ybottom > height) ybottom = height;
-        
-        // Draw pixels for this vertical line
-        for (int y = ytop; y < ybottom; y++) {
-            screen[y * width + i] = color;
-        }
-
-        // Update hidden buffer
-        if (heightonscreen < hidden[i]) {
-            hidden[i] = heightonscreen;
-        }
-
+        horlineHidden(
+            screen, hidden, heightmap, colormap,
+            p1.x, p1.y, dx, dy,
+            offset, scale, horizon,
+            WIDTH, HEIGHT, MAP_SIZE
+        );
 
         dz += 0.000001f; // Increment dz gradually for depth
     }
 }
 
-// Host function to launch the kernel
-void cudaHorlineHidden(
-    uint32_t* d_screen,
-    float* d_hidden,
-    const uint8_t* d_heightmap,
-    const uint32_t* d_colormap,
-    CustomPoint p1, CustomPoint p2,
-    float offset, float scale, float horizon)
-{
-    float dx = (p2.x - p1.x) / WIDTH;
-    float dy = (p2.y - p1.y) / WIDTH;
-
-    // Configure kernel launch
-    int threadsPerBlock = 256;
-    int blocks = (WIDTH + threadsPerBlock - 1) / threadsPerBlock;
-
-    // horlineHiddenKernel<<<blocks, threadsPerBlock>>>(
-    //     d_screen, d_hidden, d_heightmap, d_colormap,
-    //     p1.x, p1.y, dx, dy,
-    //     offset, scale, horizon,
-    //     WIDTH, HEIGHT, MAP_SIZE
-    // );
-    
-
-}
 
 void launchRenderKernel(
     uint32_t* d_screen,
@@ -119,11 +127,10 @@ void launchRenderKernel(
     float height,
     float distance)
 {
-    int numSteps = (int)((distance - 5.0f) / 0.1f);
     int threadsPerBlock = 256;
-    int numBlocks = (numSteps + threadsPerBlock - 1) / threadsPerBlock;
+    int numBlocks = (WIDTH + threadsPerBlock - 1) / threadsPerBlock;
     
-    horlineHiddenKernel<<<numBlocks, threadsPerBlock>>>(
+    DrawFrontToBackKernel<<<numBlocks, threadsPerBlock>>>(
         d_screen,
         d_hidden,
         d_heightmap,
@@ -131,10 +138,7 @@ void launchRenderKernel(
         p_x, p_y,
         phi,
         height,
-        distance,
-        WIDTH,
-        HEIGHT,
-        MAP_SIZE
+        distance
     );
     
     cudaDeviceSynchronize();
