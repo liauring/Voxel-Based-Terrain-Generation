@@ -20,45 +20,55 @@ __global__ void horlineHiddenKernel(
     int height_val,
     int map_size)
 {
-    // Each thread handles one z value
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    float z = 5.0f + idx * 0.1f;
-    if (z >= distance) return;
-    
-    // Calculate points for this z
-    CustomPoint pl = {-z, -z};
-    CustomPoint pr = {z, -z};
+    // Each thread handles one vertical line
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= width) return;
+    // float z = 5.0f + idx * 0.1f;
+    // if (z >= distance) return;
 
-    // Rotate points
-    pl = deviceRotate(pl, phi);
-    pr = deviceRotate(pr, phi);
 
-    CustomPoint p1 = {p_x + pl.x, p_y + pl.y};
-    CustomPoint p2 = {p_x + pr.x, p_y + pr.y};
+    float offset = -height;
 
-    // Calculate dx, dy for horizontal line
-    float dx = (p2.x - p1.x) / width;
-    float dy = (p2.y - p1.y) / width;
+    float horizon = 100;
+    float dz = 0.1f;
+    for (float z = 5; z < distance; z += dz) {
+        float scale = 1.0f / z * 240.0f;
 
-    // Draw horizontal line
-    for (int i = 0; i < width; i++) {
+        // Calculate points for this z
+        CustomPoint pl = {-z, -z};
+        CustomPoint pr = {z, -z};
+
+        // Rotate points
+        pl = deviceRotate(pl, phi);
+        pr = deviceRotate(pr, phi);
+
+        CustomPoint p1 = {p_x + pl.x, p_y + pl.y};
+        CustomPoint p2 = {p_x + pr.x, p_y + pr.y};
+
+        float dx = (p2.x - p1.x) / width;
+        float dy = (p2.y - p1.y) / width;
+
+
+        // Old horline kernel
+        // Calculate position in heightmap/colormap
         float cur_x = p1.x + dx * i;
         float cur_y = p1.y + dy * i;
         
         int xi = ((int)floor(cur_x)) & (map_size - 1);
         int yi = ((int)floor(cur_y)) & (map_size - 1);
 
-        float scale = -1.0f / z * 240.0f;
-        float heightonscreen = (heightmap[yi * map_size + xi] - height) * scale + 100;
+        // Calculate height and get color
+        float heightonscreen = (heightmap[yi * map_size + xi] + offset) * scale + horizon;
         uint32_t color = colormap[yi * map_size + xi];
 
+        // Draw vertical line
         int ytop = (int)heightonscreen;
         int ybottom = (int)hidden[i];
         
         if (ytop < 0) ytop = 0;
-        if (ybottom > height_val) ybottom = height_val;
+        if (ybottom > height) ybottom = height;
         
-        // Draw vertical line
+        // Draw pixels for this vertical line
         for (int y = ytop; y < ybottom; y++) {
             screen[y * width + i] = color;
         }
@@ -67,6 +77,9 @@ __global__ void horlineHiddenKernel(
         if (heightonscreen < hidden[i]) {
             hidden[i] = heightonscreen;
         }
+
+
+        dz += 0.000001f; // Increment dz gradually for depth
     }
 }
 
