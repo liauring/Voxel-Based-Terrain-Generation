@@ -16,10 +16,11 @@ __global__ void CalculateDepthsKernel(
     const uint32_t* colormap,
     float p_x, float p_y,
     float phi,
-    float height)  // Current z value
+    float height,
+    int num_depths)  // Current z value
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
-    if (x >= WIDTH) return;
+    if (x >= WIDTH || blockIdx.y * blockDim.y + threadIdx.y >= num_depths) return;
     float z = 5.0f + blockIdx.y * 0.1f;
 
     float scale = -1.0f / z * 240.0f;
@@ -47,7 +48,7 @@ __global__ void CalculateDepthsKernel(
 
     float heightonscreen = (heightmap[yi * MAP_SIZE + xi] + offset) * scale + horizon;
     
-    int depth_idx = blockIdx.y * WIDTH + x;
+    int depth_idx = (blockIdx.y * blockDim.y + threadIdx.y)* WIDTH + x;
     depth_buffer[depth_idx].point_height = heightonscreen;
     depth_buffer[depth_idx].color = colormap[yi * MAP_SIZE + xi];
 }
@@ -106,10 +107,10 @@ void launchRenderKernel(
     
     // Launch CalculateDepthsKernel
     // All depths are calculated in parallel
-    dim3 threadsPerBlock(256, 1);
-    dim3 numBlocks((WIDTH + threadsPerBlock.x - 1) / threadsPerBlock.x, num_depths);
+    dim3 threadsPerBlock(256, 2);
+    dim3 numBlocks((WIDTH + threadsPerBlock.x - 1) / threadsPerBlock.x, (num_depths + threadsPerBlock.y - 1) / threadsPerBlock.y);
     CalculateDepthsKernel<<<numBlocks, threadsPerBlock>>>(
-        d_depth_buffer, d_heightmap, d_colormap, p_x, p_y, phi, height);  
+        d_depth_buffer, d_heightmap, d_colormap, p_x, p_y, phi, height, num_depths); 
 
     cudaDeviceSynchronize();
     // Launch merge kernel

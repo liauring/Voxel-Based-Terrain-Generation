@@ -8,7 +8,7 @@
 #define WIDTH 700
 #define HEIGHT 512
 #define MAP_SIZE 1024
-#define DZ 1.0f
+#define DZ 0.1f
 #define DZ_STEP 0.000001f
 #define BLUE 0x87CEEB
 

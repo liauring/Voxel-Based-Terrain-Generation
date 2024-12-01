@@ -49,7 +49,7 @@ int main() {
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        SaveFrameAsImage(i); // Save the current frame as an image
+        //SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
