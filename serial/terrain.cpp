@@ -7,11 +7,12 @@
 #include <sys/types.h> // For mode_t
 #include <iostream>
 #include <chrono>
-#include <omp.h>
 
 #define WIDTH 700
 #define HEIGHT 512
 #define MAP_SIZE 1024
+#define DZ 0.1f
+#define DZ_STEP 0.000001f
 
 
 
@@ -42,11 +43,11 @@ int main() {
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
-    Init("./C7W.png", "./D7.png");
+    Init("../C7W.png", "../D7.png");
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        SaveFrameAsImage(i); // Save the current frame as an image
+        // SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
@@ -222,7 +223,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
         hidden[i] = HEIGHT;
     }
 
-    float dz = 1.0f;
+    float dz = DZ;
     for (float z = 5; z < distance; z += dz) {
         CustomPoint pl = {-z, -z};
         CustomPoint pr = { z, -z};
@@ -235,7 +236,7 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
             (CustomPoint){p.x + pr.x, p.y + pr.y},
             -height, -1.0f / z * 240.0f, 100, pmap);
 
-        dz += 0.000001f; // Increment dz gradually for depth
+        dz += DZ_STEP; // Increment dz gradually for depth
     }
 }
 
@@ -301,5 +302,3 @@ void SaveFrameAsImage(int frameNumber) {
     png_destroy_write_struct(&png, &info);
     fclose(fp);
 }
-
-
