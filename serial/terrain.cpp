@@ -10,7 +10,7 @@
 
 #define WIDTH 700
 #define HEIGHT 512
-#define MAP_SIZE 1024
+#define MAP_SIZE 4096
 #define DZ 0.1f
 #define DZ_STEP 0.000001f
 
@@ -43,7 +43,7 @@ int main() {
     // Ensure output folder exists
     CreateOutputFolder("./output");
     
-    Init("../C7W.png", "../D7.png");
+    Init("../highR_color.png", "../highR_height.png");
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
