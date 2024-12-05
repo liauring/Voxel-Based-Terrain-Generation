@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-< lang="en">
+<lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -641,8 +641,9 @@
     </table>
 
     <h2>Concerns</h2>
-    <p>To enhance the performance of the sequential code segment responsible for rendering colors in the output images, an algorithm for partial parallelization is essential. This sequential code calculates the height of objects from the front to the back of each depth layer. Since the occluded parts of the image are not visible in the output images, a sequential mechanism determines the heights of objects from the front to the back of each depth layer. This process must be performed sequentially, as the heights of closer objects must be accessed before determining the region to render for subsequent layers. For instance, if a high mountain is in the foreground depth, the tree behind it in the background depth does not need to be rendered because it is obscured by the mountain.</br>
-    The current performance is impeded by this mechanism, which necessitates sequential execution. Several proposals have been put forth, including dividing the image into multiple blocks to be rendered concurrently and then sequentially merging the blocks. However, the implementation details and computational efficiency must be thoroughly analyzed before proceeding. Our primary focus is on identifying potential ways to parallelize this portion of the code.</p>
+    <p>To enhance the performance of the sequential code segment responsible for rendering colors in the output images, an algorithm for partial parallelization is essential. This sequential code calculates the height of objects from the front to the back of each depth layer. Since the occluded parts of the image are not visible in the output images, a sequential mechanism determines the heights of objects from the front to the back of each depth layer. This process must be performed sequentially, as the heights of closer objects must be accessed before determining the region to render for subsequent layers. For instance, if a high mountain is in the foreground depth, the tree behind it in the background depth does not need to be rendered because it is obscured by the mountain.</p>
+    <p>The current performance is impeded by this mechanism, which necessitates sequential execution. Several proposals have been put forth, including dividing the image into multiple blocks to be rendered concurrently and then sequentially merging the blocks. However, the implementation details and computational efficiency must be thoroughly analyzed before proceeding. Our primary focus is on identifying potential ways to parallelize this portion of the code.</p>
+    <p>Another challenge we face lies in the resolution of the height and color maps currently used. Although these maps allow for successful rendering of images, their limited resolution makes it difficult to visually observe significant performance differences. Even with online tools to enhance image resolution, these methods primarily improve sharpness rather than add meaningful detail to the data. As a result, our ability to visually demonstrate performance improvements is constrained. To address this bottleneck, we are actively seeking higher-resolution datasets to ensure our experiments and visualizations provide a more concrete and compelling demonstration of our optimizations.</p>
 
 </body>
 </html>
