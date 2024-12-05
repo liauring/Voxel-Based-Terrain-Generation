@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+< lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -484,6 +484,165 @@
         </tbody>
     </table>
     </table>
+
+    <hr>
+    <h1>Milestone Overview</h1>
+    <h2>Schedule</h2>
+    <table>
+        <tr>
+            <th>Time Period</th>
+            <th>Tasks</th>
+        </tr>
+        <tr>
+            <td>11/11-11/17</td>
+            <td>
+                <ul>
+                    <li>Collect height and color maps: Connie, Ching Han</li>
+                    <li>Survey and decide C++ rendering packages: Connie, Ching Han</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>11/18-11/24</td>
+            <td>
+                <ul>
+                    <li>Finish the serial version of Perspective Projection: Ching Han</li>
+                    <li>Prepare test cases for parallelism: Connie</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>11/25-12/1</td>
+            <td>
+                <ul>
+                    <li>Convert the sequential version into the parallel one:
+                        <ul>
+                            <li>CPU parallel: Connie</li>
+                            <li>GPU parallel:
+                                <ul>
+                                    <li>gpu_launchKernalEveryDz: Ching Han</li>
+                                    <li>gpu_launchKernalOnce: Connie</li>
+                                    <li>gpu_parallelDz: Ching Han</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>Test and analyze parallel version performance: Connie, Ching Han</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>12/2-12/8</td>
+            <td>
+                <ul>
+                    <li>Work on optimizing the serial portion of the code: Ching Han, Connie</li>
+                    <li>Test and analyze parallel version performance: Ching Han</li>
+                    <li>Visualize rendering results for demo: Connie</li>
+                    <li>Implement advanced ray-tracing (if available): Ching Han, Connie</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>12/9-12/15</td>
+            <td>
+                <ul>
+                    <li>Write the report and poster: Ching Han, Connie</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <h2><strong>Progress Update</strong></h2>
+    <p>CPU and GPU parallel codes have been implemented and tested on GHC machine. There are currently one sequential CPU code for baseline and four versions of parallel CPU/GPU codes with different scheduling strategies.</p>
+
+    <h3>CPU Parallel</h3>
+    <p>The CPU code employed OpenMP to parallelize the screen rendering process. Within each depth layer, OpenMP is utilized to parallelize the vertical rendering of the images. This entails rendering vertical lines of an image in parallel. The parallelism of this method is limited to the width of the image since there exist dependencies between vertical pixels.</p>
+
+    <h3>GPU Parallel</h3>
+    <p>The GPU codes employed CUDA for terrain rendering.</p>
+    <ul>
+        <li><strong>gpu_launchKernalEveryDz:</strong>
+            <p>This code represents the initial implementation of GPU code. The parallelization mechanism is identical to that of the CPU portion. Within each depth layer, a GPU kernel is launched, enabling parallel rendering of each vertical line. While this method offers superior performance compared to the CPU implementation, it is limited by the number of kernel launches, which leads to substantial overhead as the number of depth layers increases. The implementation is also limited by the width of the output image as only “width” vertical lines can be processed concurrently. This significantly underutilized the GPU.</p>
+        </li>
+        <li><strong>gpu_launchKernalOnce:</strong>
+            <p>This code represents an enhanced version of the <code>gpu_launchKernalEveryDz</code> function. Unlike the previous function, it launches a kernel for all depth layers instead of individual layers. However, the code is still constrained to the “width” number of threads.</p>
+        </li>
+        <li><strong>gpu_parallelDz:</strong>
+            <p>This code aims to address the limitation of previous codes, which are restricted to launching only a specified number of threads. The code is structured into two distinct sections: the first section handles the conversion of 3D depth to 2D coordinates, while the second section is responsible for rendering the image.</p>
+            <ul>
+                <li>The initial kernel optimizes the utilization of CUDA cores by concurrently calculating and transforming 3D coordinates to 2D coordinates. Subsequently, it retrieves the color and height data from the color map and height map and stores them in the VRAM. This kernel launches multiple thread blocks, each comprising 2D thread blocks that span over two depth layers and a width of 256 pixels. Consequently, each thread block contains a total of 512 threads.</li>
+                <li>The second kernel is responsible for rendering the image. Due to the dependencies, only vertical lines on the image can be processed concurrently. Consequently, only “width” number of threads can be launched. Within each thread, it iterates through all depth layers and retrieves the color and height data computed from the preceding kernel. Subsequently, it writes colors appropriately to each pixel within a vertical line.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Goals</h2>
+    <p>We believe that we can achieve our goal performance. Our goal is to render 60 frames of terrain in a second such that we can achieve at least 60FPS to simulate real gaming situations. We are currently able to parallelize the computation of the transformation of 3D view to 2D images, which includes the height and color information, and gain reasonable speedup. Regarding difficulty, we are currently working on developing an algorithm to better parallelize the screen rendering mechanism, which consists of many dependencies. The screen rendering process prioritizes rendering the heights of closer objects first, displaying them on the screen, and then progressively rendering the subsequent layers of objects that are further away. This sequential progress will be the bottleneck of the performance. Therefore, our goal is to optimize/rewrite this portion of the code to leverage as much parallelism as possible. </p>
+    <p><strong>Nice-To-Have</strong></p>
+    <ul>
+        <li><strong>Advanced Rendering Features:</strong>  The goal is to enhance the visual realism and efficiency of terrain rendering by implementing different rendering algorithms tailored to specific needs. These advanced features aim to achieve higher FPS than current GPU parallel methods  at high resolutions, ensuring smooth performance even in dynamic gaming environments. Combined, these techniques provide a robust foundation for tackling the challenges of rendering detailed voxel terrains while maintaining high performance.</li>
+        <li><strong>Comprehensive Visualizations:</strong> These visualizations are designed to bridge the gap between technical details and user experience, emphasizing the practical impact of the rendering optimizations. Users can observe how the rendering pipeline adapts in real time, maintaining performance across various configurations. This requires setting up a server capable of managing rendering computations or precomputed data while providing a responsive front-end interface for visualization.</li>
+    </ul>
+    <h2>Plan on Poster Session</h2>
+    <h3><strong>Performance Graphs</strong></h3>
+    <p>We will include performance metrics for a detailed comparison:</p>
+    <ul>
+        <li><strong>Speedup Graphs:</strong>
+            <ul>
+                <li>Show the speedup achieved by each implementation compared to the baseline (serial CPU).</li>
+                <li>Highlight the scalability of <code>gpu_parallelDz</code> with different GPU methods as the depth and image resolution increase.</li>
+            </ul>
+        </li>
+        <li><strong>Resource Utilization:</strong>
+            <ul>
+                <li>Analyze and visually present how much time is spent on each of the two main computational stages, 3D-to-2D conversion and image rendering, of all implementations.</li>
+                <li>Include bar charts illustrating GPU resource utilization for each implementation.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3><strong>Key Lessons and Insights</strong></h3>
+    <p>We will present key observations and insights in the form of concise bullet points and visualizations:</p>
+    <ul>
+        <li>Explain how vertical line dependencies impact parallelism and how we mitigated this in <code>gpu_parallelDz</code>.</li>
+        <li>Highlight how optimizing thread block configurations and reducing kernel launch overhead dramatically improves performance.</li>
+    </ul>
+
+    <h3><strong>Interactive Demo (Nice-To-Have)</strong></h3>
+    <p>We will showcase a real-time rendering demo that highlights the performance differences between the various implementations on both the CPU and GPU. The demo will include:</p>
+    <ul>
+        <li><strong>CPU vs GPU videos:</strong> Demonstrate rendering speeds for the same terrain data across different methods (CPU parallelized with OpenMP and GPU parallelized using CUDA).</li>
+        <li><strong>GPU optimization levels videos:</strong>
+            <ul>
+                <li>Compare the performance of <code>gpu_launchKernalEveryDz</code>, <code>gpu_launchKernalOnce</code>, and <code>gpu_parallelDz</code> visually and in terms of rendering speed.</li>
+                <li>Highlight how increasing GPU utilization improves the terrain rendering process.</li>
+            </ul>
+        </li>
+        <li><strong>Dynamic Terrain Interaction:</strong> Users can modify terrain parameters (e.g., depth, resolution) and observe how the different methods handle these changes in real time.</li>
+    </ul>
+    <h2>Preliminary Results</h2>
+    <table>
+        <tr>
+            <th></th>
+            <th>Serial CPU</th>
+            <th>Parallel CPU</th>
+            <th>gpu_launchKernalEveryDz</th>
+            <th>gpu_launchKernalOnce</th>
+            <th>gpu_parallelDz</th>
+        </tr>
+        <tr>
+            <td>Speedup</td>
+            <td>1</td>
+            <td>1.97</td>
+            <td>2.55</td>
+            <td>6.58</td>
+            <td>9.98</td>
+        </tr>
+    </table>
+
+    <h2>Concerns</h2>
+    <p>To enhance the performance of the sequential code segment responsible for rendering colors in the output images, an algorithm for partial parallelization is essential. This sequential code calculates the height of objects from the front to the back of each depth layer. Since the occluded parts of the image are not visible in the output images, a sequential mechanism determines the heights of objects from the front to the back of each depth layer. This process must be performed sequentially, as the heights of closer objects must be accessed before determining the region to render for subsequent layers. For instance, if a high mountain is in the foreground depth, the tree behind it in the background depth does not need to be rendered because it is obscured by the mountain.</br>
+    The current performance is impeded by this mechanism, which necessitates sequential execution. Several proposals have been put forth, including dividing the image into multiple blocks to be rendered concurrently and then sequentially merging the blocks. However, the implementation details and computational efficiency must be thoroughly analyzed before proceeding. Our primary focus is on identifying potential ways to parallelize this portion of the code.</p>
 
 </body>
 </html>
