@@ -125,3 +125,71 @@ int main() {
 
     return 0;
 }
+
+#include <png.h>
+#include <cstdio>
+#include <cstdlib>
+
+void SaveToImage(const char* filename) {
+    FILE* fp = fopen(filename, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error: Unable to open file for writing: %s\n", filename);
+        return;
+    }
+
+    // 初始化 PNG 結構
+    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png) {
+        fprintf(stderr, "Error: Unable to create PNG write struct.\n");
+        fclose(fp);
+        return;
+    }
+
+    png_infop info = png_create_info_struct(png);
+    if (!info) {
+        fprintf(stderr, "Error: Unable to create PNG info struct.\n");
+        png_destroy_write_struct(&png, nullptr);
+        fclose(fp);
+        return;
+    }
+
+    if (setjmp(png_jmpbuf(png))) {
+        fprintf(stderr, "Error: During PNG creation.\n");
+        png_destroy_write_struct(&png, &info);
+        fclose(fp);
+        return;
+    }
+
+    // 設定 PNG 輸出
+    png_init_io(png, fp);
+    png_set_IHDR(png, info, WIDTH, HEIGHT, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    png_write_info(png, info);
+
+    // 構造圖像數據
+    png_bytep row_pointers[HEIGHT];
+    for (int y = 0; y < HEIGHT; y++) {
+        row_pointers[y] = (png_bytep)malloc(WIDTH * 3);
+        for (int x = 0; x < WIDTH; x++) {
+            uint32_t color = screen[y * WIDTH + x];
+            row_pointers[y][x * 3] = (color >> 16) & 0xFF;      // 紅色通道
+            row_pointers[y][x * 3 + 1] = (color >> 8) & 0xFF;  // 綠色通道
+            row_pointers[y][x * 3 + 2] = color & 0xFF;         // 藍色通道
+        }
+    }
+
+    // 寫入 PNG 圖像
+    png_write_image(png, row_pointers);
+    png_write_end(png, nullptr);
+
+    // 釋放記憶體
+    for (int y = 0; y < HEIGHT; y++) {
+        free(row_pointers[y]);
+    }
+
+    // 清理 PNG 結構
+    png_destroy_write_struct(&png, &info);
+    fclose(fp);
+
+    printf("Image saved as: %s\n", filename);
+}
