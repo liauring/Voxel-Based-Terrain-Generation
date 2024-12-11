@@ -62,22 +62,20 @@ __global__ void MergeDepthsKernel(
     int num_depths)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
-    // Declare shared memory for hidden buffer
-    extern __shared__ float shared_hidden[];
     if (x >= WIDTH) return;
     for(int y = 0; y < HEIGHT; y++) {
         screen[y * WIDTH + x] = BLUE;
     }
-    shared_hidden[threadIdx.x] = HEIGHT;
+    float hidden = HEIGHT;
     
     //Process all depths for this x coordinate
     for (int d = 0; d < num_depths; d++) {
         DepthPixel pixel = depth_buffer[d * WIDTH + x];
         //if (!pixel.valid) continue;
         
-        if (pixel.point_height < shared_hidden[threadIdx.x]) {
+        if (pixel.point_height < hidden) {
             int ytop = (int)pixel.point_height;
-            int ybottom = (int)shared_hidden[threadIdx.x];
+            int ybottom = (int)hidden;
             
             if (ytop < 0) ytop = 0;
             if (ybottom > HEIGHT) ybottom = HEIGHT;
@@ -85,7 +83,7 @@ __global__ void MergeDepthsKernel(
             for (int y = ytop; y < ybottom; y++) {
                 screen[y * WIDTH + x] = pixel.color;
             }
-            shared_hidden[threadIdx.x] = pixel.point_height;
+            hidden = pixel.point_height;
         }
     }
 }
@@ -124,10 +122,9 @@ void launchRenderKernel(
     // Launch merge kernel
     int mergeThreads = 256;
     int mergeBlocks = (WIDTH + mergeThreads - 1) / mergeThreads;
-    size_t sharedMemSize = mergeThreads * sizeof(float);  // Allocate shared memory for hidden buffer
     // start timer
     start = std::chrono::high_resolution_clock::now();
-    MergeDepthsKernel<<<mergeBlocks, mergeThreads, sharedMemSize>>>(
+    MergeDepthsKernel<<<mergeBlocks, mergeThreads>>>(
         d_screen, d_depth_buffer, num_depths);
     cudaDeviceSynchronize();
     // end timer
