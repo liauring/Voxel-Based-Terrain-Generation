@@ -31,7 +31,6 @@ void CreateOutputFolder(const char *foldername);
 
 // Add GPU memory pointers with other globals
 uint32_t* d_screen;
-float* d_hidden;
 uint8_t* d_heightmap;
 uint32_t* d_colormap;
 
@@ -43,19 +42,19 @@ int main() {
     
     Init("../C7W.png", "../D7.png");
     // Initialize CUDA memory
-    initCudaMemory(&d_screen, &d_hidden, &d_heightmap, &d_colormap);
+    initCudaMemory(&d_screen, &d_heightmap, &d_colormap);
     copyDataToGPU(d_heightmap, heightmap, d_colormap, colormap);
     const auto compute_start = std::chrono::steady_clock::now();
     for (int i = 0; i < 64; i++) {
         printf("Rendering Frame %d\n", i);
         DrawFrontToBack((CustomPoint){(float)670, (float)(500 - i * 16)}, 0, 120, 10000, (CustomPoint){(float)670, (float)(500 - i * 16)});
-        //SaveFrameAsImage(i); // Save the current frame as an image
+        SaveFrameAsImage(i); // Save the current frame as an image
     }
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " << compute_time << '\n';
 
     // Cleanup CUDA memory
-    freeCudaMemory(d_screen, d_hidden, d_heightmap, d_colormap);
+    freeCudaMemory(d_screen, d_heightmap, d_colormap);
     
     return 0;
 }
@@ -179,10 +178,6 @@ void ClearScreen(uint32_t color) {
     for (int i = 0; i < WIDTH; i++) {
         hidden[i] = HEIGHT;
     }
-    // Reset hidden buffer on GPU
-    //float init_hidden = HEIGHT;
-    //cudaMemset(d_hidden, init_hidden, WIDTH * sizeof(float));
-    cudaMemcpy(d_hidden, hidden, WIDTH * sizeof(float), cudaMemcpyHostToDevice);
 
 }
 
@@ -227,7 +222,6 @@ void DrawFrontToBack(CustomPoint p, float phi, float height, float distance, Cus
     // Launch kernel through wrapper function
     launchRenderKernel(
         d_screen,
-        d_hidden,
         d_heightmap,
         d_colormap,
         p.x, p.y,

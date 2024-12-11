@@ -25,7 +25,6 @@ typedef struct {
 
 void launchRenderKernel(
     uint32_t* d_screen,
-    float* d_hidden,
     const uint8_t* d_heightmap,
     const uint32_t* d_colormap,
     float p_x, float p_y,
@@ -37,7 +36,6 @@ void launchRenderKernel(
 // Memory management functions
 void initCudaMemory(
     uint32_t** d_screen,
-    float** d_hidden,
     uint8_t** d_heightmap,
     uint32_t** d_colormap
 );
@@ -49,7 +47,6 @@ void copyDataToGPU(
 
 void freeCudaMemory(
     uint32_t* d_screen,
-    float* d_hidden,
     uint8_t* d_heightmap,
     uint32_t* d_colormap
 );

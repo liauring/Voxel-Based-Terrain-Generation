@@ -1,5 +1,7 @@
 #include <cuda_runtime.h>
 #include "cudaterrain.h"
+#include <iostream>
+#include <chrono>
 
 
 
@@ -56,25 +58,26 @@ __global__ void CalculateDepthsKernel(
 
 __global__ void MergeDepthsKernel(
     uint32_t* screen,
-    float* hidden,
     DepthPixel* depth_buffer,
     int num_depths)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
+    // Declare shared memory for hidden buffer
+    extern __shared__ float shared_hidden[];
     if (x >= WIDTH) return;
     for(int y = 0; y < HEIGHT; y++) {
         screen[y * WIDTH + x] = BLUE;
     }
-    hidden[x] = HEIGHT;
+    shared_hidden[threadIdx.x] = HEIGHT;
     
     //Process all depths for this x coordinate
     for (int d = 0; d < num_depths; d++) {
         DepthPixel pixel = depth_buffer[d * WIDTH + x];
         //if (!pixel.valid) continue;
         
-        if (pixel.point_height < hidden[x]) {
+        if (pixel.point_height < shared_hidden[threadIdx.x]) {
             int ytop = (int)pixel.point_height;
-            int ybottom = (int)hidden[x];
+            int ybottom = (int)shared_hidden[threadIdx.x];
             
             if (ytop < 0) ytop = 0;
             if (ybottom > HEIGHT) ybottom = HEIGHT;
@@ -82,14 +85,13 @@ __global__ void MergeDepthsKernel(
             for (int y = ytop; y < ybottom; y++) {
                 screen[y * WIDTH + x] = pixel.color;
             }
-            hidden[x] = pixel.point_height;
+            shared_hidden[threadIdx.x] = pixel.point_height;
         }
     }
 }
 
 void launchRenderKernel(
     uint32_t* d_screen,
-    float* d_hidden,
     const uint8_t* d_heightmap,
     const uint32_t* d_colormap,
     float p_x, float p_y,
@@ -109,16 +111,29 @@ void launchRenderKernel(
     // All depths are calculated in parallel
     dim3 threadsPerBlock(256, 2);
     dim3 numBlocks((WIDTH + threadsPerBlock.x - 1) / threadsPerBlock.x, (num_depths + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
     CalculateDepthsKernel<<<numBlocks, threadsPerBlock>>>(
         d_depth_buffer, d_heightmap, d_colormap, p_x, p_y, phi, height, num_depths); 
 
     cudaDeviceSynchronize();
+    // end timer
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time for CalculateDepthsKernel: " << elapsed.count() << " s\n";
     // Launch merge kernel
     int mergeThreads = 256;
     int mergeBlocks = (WIDTH + mergeThreads - 1) / mergeThreads;
-    MergeDepthsKernel<<<mergeBlocks, mergeThreads>>>(
-        d_screen, d_hidden, d_depth_buffer, num_depths);
+    size_t sharedMemSize = mergeThreads * sizeof(float);  // Allocate shared memory for hidden buffer
+    // start timer
+    start = std::chrono::high_resolution_clock::now();
+    MergeDepthsKernel<<<mergeBlocks, mergeThreads, sharedMemSize>>>(
+        d_screen, d_depth_buffer, num_depths);
     cudaDeviceSynchronize();
+    // end timer
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    std::cout << "Elapsed time for MergeDepthsKernel: " << elapsed.count() << " s\n";
     // can be freed after all screen are rendered
     cudaFree(d_depth_buffer);
 }
@@ -128,19 +143,14 @@ void launchRenderKernel(
 // Memory initialization
 void initCudaMemory(
     uint32_t** d_screen,
-    float** d_hidden,
     uint8_t** d_heightmap,
     uint32_t** d_colormap)
 {
     // Allocate device memory
     cudaCheckError(cudaMalloc(d_screen, WIDTH * HEIGHT * sizeof(uint32_t)));
-    cudaCheckError(cudaMalloc(d_hidden, WIDTH * sizeof(float)));
     cudaCheckError(cudaMalloc(d_heightmap, MAP_SIZE * MAP_SIZE * sizeof(uint8_t)));
     cudaCheckError(cudaMalloc(d_colormap, MAP_SIZE * MAP_SIZE * sizeof(uint32_t)));
 
-    // Initialize hidden buffer with HEIGHT
-    float init_value = HEIGHT;
-    cudaCheckError(cudaMemset(*d_hidden, init_value, WIDTH * sizeof(float)));
     
     // Initialize screen with sky color (optional)
     uint32_t sky_color = 0x87CEEB;
@@ -168,12 +178,10 @@ void copyDataToGPU(
 // Free CUDA memory
 void freeCudaMemory(
     uint32_t* d_screen,
-    float* d_hidden,
     uint8_t* d_heightmap,
     uint32_t* d_colormap)
 {
     if (d_screen) cudaCheckError(cudaFree(d_screen));
-    if (d_hidden) cudaCheckError(cudaFree(d_hidden));
     if (d_heightmap) cudaCheckError(cudaFree(d_heightmap));
     if (d_colormap) cudaCheckError(cudaFree(d_colormap));
 }
